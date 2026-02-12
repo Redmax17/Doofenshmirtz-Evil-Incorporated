@@ -1,8 +1,9 @@
 /* dashboard.css */
-/* This file is intentionally "light-touch" so it doesn't override Chakra UI styles. */
+/*this is secondary to the Chakra framework to provide an in depth adjustment to the broad framework chakra provided
+and to customize based on our color scheme more eaasily.*/
 
 :root {
-  /* Palette from your screenshot */
+  /* Our Main Color Palette */
   --brand-500: #9282ba;
   --brand-600: #6f65a0;
   --slate-500: #656a62;
@@ -36,22 +37,20 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Links (keeps Chakra links consistent if you render <a> tags anywhere) */
 a {
   color: var(--brand-600);
   text-decoration: none;
 }
+
 a:hover {
   text-decoration: underline;
 }
 
-/* Accessible focus ring (won’t override Chakra’s focus-visible, just supports native nodes) */
 *:focus-visible {
   outline: 2px solid var(--brand-500);
   outline-offset: 2px;
 }
 
-/* Optional: subtle page background texture */
 .dashboardBg {
   background:
     radial-gradient(900px 400px at 15% 0%, rgba(146,130,186,0.14), transparent 60%),
@@ -59,7 +58,6 @@ a:hover {
     var(--bg-canvas);
 }
 
-/* Optional: if you have legacy wrapper classes */
 .dashboardContainer {
   max-width: 1100px;
   margin: 0 auto;
@@ -76,6 +74,7 @@ a:hover {
 .dashboardCardHeader {
   padding: 18px 18px 0 18px;
 }
+
 .dashboardCardBody {
   padding: 18px;
 }
@@ -83,12 +82,13 @@ a:hover {
 .mutedText {
   color: var(--text-muted);
 }
+
 .strongText {
   color: var(--text-strong);
   font-weight: 800;
 }
 
-/* Divider replacement (since Chakra v3 removed <Divider />) */
+/* Divider replacement (since Chakra v3 removed <Divider /> tag) */
 .dashboardDivider {
   height: 1px;
   width: 100%;
@@ -107,9 +107,11 @@ a:hover {
   cursor: pointer;
   transition: transform 120ms ease, filter 120ms ease;
 }
+
 .legacyButton:hover {
   filter: brightness(0.98);
 }
+
 .legacyButton:active {
   transform: translateY(1px);
 }
@@ -119,11 +121,12 @@ a:hover {
   color: var(--brand-600);
   border: 1px solid rgba(111,101,160,0.35);
 }
+
 .legacyButtonOutline:hover {
   background: rgba(146,130,186,0.10);
 }
 
-/* If you used Box as="table" add className="dashboardTable" for polish */
+/*transactions table format*/
 .dashboardTableWrap {
   overflow-x: auto;
 }
@@ -164,6 +167,7 @@ a:hover {
 .dashboardTable thead th:first-child {
   border-top-left-radius: var(--radius-lg);
 }
+
 .dashboardTable thead th:last-child {
   border-top-right-radius: var(--radius-lg);
 }
@@ -180,14 +184,16 @@ a:hover {
   background: rgba(93,200,155,0.28);
 }
 
-/* Scrollbar (optional, looks nice on dashboard tables) */
+/* Scrollbar */
 .dashboardTableWrap::-webkit-scrollbar {
   height: 10px;
 }
+
 .dashboardTableWrap::-webkit-scrollbar-thumb {
   background: rgba(101,106,98,0.35);
   border-radius: 999px;
 }
+
 .dashboardTableWrap::-webkit-scrollbar-track {
   background: rgba(31,35,39,0.06);
   border-radius: 999px;
@@ -198,12 +204,13 @@ a:hover {
   justify-content: center;
   width: 100%;
 }
-.pieChartInner {
-  width: 100%;
-  width: auto;  /* controls how big it can get */
-  height: 500px;     /* gives the canvas room */
-}
 
 .pieChartInner Pie{
   object-fit:"cover"
+}
+
+.headerBox{
+  text-align:"center";
+  color: var(--text-strong);
+  font-weight: 800;
 }

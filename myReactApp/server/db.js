@@ -1,3 +1,6 @@
+//DEV ENV MY SQL WORKBENCH DB CONNECTIOM
+//Temporary and will be replaced with live DB at some point
+
 import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 

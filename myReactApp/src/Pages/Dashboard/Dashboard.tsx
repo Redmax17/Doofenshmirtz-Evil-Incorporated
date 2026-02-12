@@ -1,9 +1,17 @@
+/*
+  This is the dashboard page the imports that are non standard include:
+  Spending pie Chart: A React Component that displays a pie chart of spending by category.
+  Spending Line Chart: A React Component that displays a Line/Bar Graph of spending by time.
+  Various Types from The shared Type doc.
+  Chakra elements.
+*/
+
 import { useEffect, useMemo, useState } from "react";
 import Layout from "../../Shared/Layout";
 import { apiClient } from "../../Shared/apiClient";
-import type { DashboardSummary, TransactionRow } from "../../Shared/types";
+import type { DashboardSummary, TransactionRow, TimeFrameKey} from "../../Shared/types";
 import SpendingPieChart from "../../Shared/SpendingPieChart";
-
+import SpendingLineChart from "../../Shared/SpendingLineChart";
 import {
   Badge,
   Box,
@@ -21,6 +29,8 @@ import {
 } from "@chakra-ui/react";
 
 function negativeCheck(amountValue: number){
+  //This function Checks for negative values in displayed numbers to make them appear as red/green text 
+  // by returning the proper color code from the imported theme pages
   if (amountValue>=0){
     return "accent.400";
   }
@@ -30,6 +40,7 @@ function negativeCheck(amountValue: number){
 }
 
 function formatMoney(amountValue: number): string {
+  //Helper function to Format values in the proper Style for currency
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -37,41 +48,86 @@ function formatMoney(amountValue: number): string {
 }
 
 function formatDate(dateValue: string): string {
-  // expects yyyy-mm-dd; if you store ISO, slice it before sending or handle here
+  //converts plaid date strings into date values for better format options and logic
+  // expects yyyy-mm-dd; if you store it as an ISO, slice it before sending here
+  //can adjust this func to handle iso automatically if so desired (prob for better)
   return dateValue;
 }
 
 function safeText(textValue: string): string {
+  //String Cleaner helper function
   const cleanValue = (textValue ?? "").trim();
   return cleanValue.length ? cleanValue : "—";
 }
 
 export default function Dashboard() {
+  //Default dashboard funciton that exports the page layout itself (the Main())
+  //These variables are used for the dashboard summary cards they store the values for the income spending and net growth totals
   const [summaryData, setSummaryData] = useState<DashboardSummary | null>(null);
+
+  //These Variables store recent transaction data for the transaction table at the bottom of the page
   const [recentTransactions, setRecentTransactions] = useState<
     TransactionRow[]
   >([]);
+
+  //Loading variables for page handling and sync handling
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorText, setErrorText] = useState<string>("");
 
+  //Time frame is how you adjust the time frame the page looks at for transactions
+  const [timeFrameValue, setTimeFrameValue] = useState<TimeFrameKey>("mtd");
+
+  const timeFrameOptions: Array<{ keyValue: TimeFrameKey; labelValue: string }> =
+    [
+      { keyValue: "mtd", labelValue: "Month-to-date" },
+      { keyValue: "last7", labelValue: "Last 7 days" },
+      { keyValue: "last30", labelValue: "Last 30 days" },
+      { keyValue: "ytd", labelValue: "Year-to-date" },
+      { keyValue: "all", labelValue: "All time" },
+    ];
+
+    const timeFrameLabel = useMemo(() => {
+      return (
+        timeFrameOptions.find((o) => o.keyValue === timeFrameValue)?.labelValue ??
+        "Month-to-date"
+      );
+    }, [timeFrameOptions, timeFrameValue]);
+
+    const cycleTimeFrame = () => {
+      setTimeFrameValue((prevValue) => {
+        const currentIndex = timeFrameOptions.findIndex(
+          (o) => o.keyValue === prevValue,
+        );
+        const nextIndex =
+          currentIndex < 0
+            ? 0
+            : (currentIndex + 1) % timeFrameOptions.length;
+        return timeFrameOptions[nextIndex].keyValue;
+      });
+    };
+  
+  //this is how it sets the badge colors for the net growth card
   const netTone = useMemo(() => {
-    if (!summaryData) return "neutral";
-    if (summaryData.netTotal > 0) return "good";
-    if (summaryData.netTotal === 0) return "warn";
+    if (!summaryData) return "Nuetral";
+    if (summaryData.netTotal > 0) return "Positive";
+    if (summaryData.netTotal === 0) return "Negative";
     return "bad";
   }, [summaryData]);
 
   async function loadDashboardData(): Promise<void> {
+    //this function calls the server through the apin client and pull the data that it uses for the different cards on the page
     setIsLoading(true);
     setErrorText("");
 
     try {
-      // Adjust endpoints to match your backend naming
+      // Try to call endpoints (can adjust these to reflect the full API once implemented)
       const summaryValue = await apiClient.get<DashboardSummary>(
-        "/api/v1/dashboard/summary",
+        `/api/v1/dashboard/summary?timeFrame=${encodeURIComponent(timeFrameValue)}`,
       );
       const transactionsValue = await apiClient.get<TransactionRow[]>(
-        "/api/v1/dashboard/recent-transactions?limit=8",
+        `/api/v1/dashboard/recent-transactions?limit=8&timeFrame=${encodeURIComponent(
+          timeFrameValue,
+        )}`,
       );
 
       setSummaryData(summaryValue);
@@ -87,40 +143,62 @@ export default function Dashboard() {
 
   useEffect(() => {
     void loadDashboardData();
-  }, []);
+  }, [timeFrameValue]);
 
-  // Chakra “surface” styles using your palette (brand + accent from theme.ts)
+  // These variables pull from our theme and represent color values for consistent stylization
   const pageBg = "brand.100";
   const cardBg = "brand.50";
   const cardBorder = "blackAlpha.100";
   const subtleText = "brand.700";
   const strongText = "brand.900";
 
+
+  //pulls from net tone value to set the color
   const netBadgeColor = useMemo(() => {
-    if (netTone === "good") return { bg: "accent.500", color: "brand.900" };
-    if (netTone === "warn") return { bg: "brand.100", color: "brand.700" };
-    if (netTone === "bad") return { bg: "negatives.400", color: "white" };
+    if (netTone === "Positive") return { bg: "accent.500", color: "brand.900" };
+    if (netTone === "Nuetral") return { bg: "brand.100", color: "brand.700" };
+    if (netTone === "Negative") return { bg: "negatives.400", color: "white" };
     return { bg: "blackAlpha.100", color: "brand.700" };
   }, [netTone]);
+
+  //This is the toggle button that is sued to switch the time frame on the page
+  const timeFrameButton = (
+    <Button
+      size="xs"
+      variant="outline"
+      borderRadius="999px"
+      borderColor="blackAlpha.200"
+      bg="brand.100"
+      color="brand.700"
+      _hover={{ bg: "brand.200" }}
+      onClick={cycleTimeFrame}
+    >
+      {timeFrameLabel}
+    </Button>
+  );
 
   return (
     <Layout activePage="dashboard">
       <Box bg={pageBg} minH="calc(100vh - 1px)">
         <Container maxW="6xl" py={{ base: 6, md: 10 }}>
-          {/* Header (keeps your title/subtitle content) */}
+          //Page Header
           <Stack gap={2} mb={6}>
-            <Heading size="lg" color={strongText}>
-              Dashboard
-            </Heading>
+           <HStack justify="space-between" align="center">
+              <Heading size="lg" color={strongText}>
+                Dashboard
+              </Heading>
 
+              <Text color={subtleText}>Time-Frame Toggle:<span> </span>{timeFrameButton}</Text>
+            </HStack>
+            
             <Text color={subtleText}>
               {summaryData
-                ? `${summaryData.monthLabel} • Data as of ${summaryData.dataAsOf}`
+                ? `Data from ${timeFrameLabel} as of ${summaryData.dataAsOf}`
                 : "Loading overview…"}
             </Text>
           </Stack>
 
-          {/* Error box (keeps retry) */}
+          //Did the page load? ifTrue:ifFalse
           {errorText ? (
             <Box
               bg={cardBg}
@@ -147,7 +225,7 @@ export default function Dashboard() {
             </Box>
           ) : null}
 
-          {/* KPI Row (same KPI content, upgraded visuals) */}
+          //this holds the summary cards (income, spending, net)
           <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4}>
             <Box
               bg={cardBg}
@@ -162,9 +240,8 @@ export default function Dashboard() {
               <Text fontSize="2xl" fontWeight={900} color={strongText} mt={1}>
                 {summaryData ? formatMoney(summaryData.incomeTotal) : "—"}
               </Text>
-              <Text fontSize="sm" color={subtleText} mt={1}>
-                Month-to-date
-              </Text>
+
+              <Box mt={2}>{timeFrameButton}</Box>
             </Box>
 
             <Box
@@ -180,9 +257,8 @@ export default function Dashboard() {
               <Text fontSize="2xl" fontWeight={900} color={strongText} mt={1}>
                 {summaryData ? formatMoney(summaryData.spendingTotal) : "—"}
               </Text>
-              <Text fontSize="sm" color={subtleText} mt={1}>
-                Month-to-date
-              </Text>
+              
+              <Box mt={2}>{timeFrameButton}</Box>
             </Box>
 
             <Box
@@ -218,16 +294,13 @@ export default function Dashboard() {
                 </Badge>
               </HStack>
 
-              <Text fontSize="sm" color={subtleText} mt={2}>
-                Month-to-date
-              </Text>
+              <Box mt={2}>{timeFrameButton}</Box>
             </Box>
           </Grid>
 
           <Box h="1px" w="100%" bg="blackAlpha.100" my={6} />
 
-          {/* Spending by category (keeps your pie chart section + component) */}
-          
+          //Pie chart that shows spending based on categories
           <Box
             bg={cardBg}
             borderWidth="1px"
@@ -241,29 +314,37 @@ export default function Dashboard() {
               <Heading size="sm" color={strongText}>
                 Spending by Category
               </Heading>
-              <Badge
-                bg="brand.100"
-                color="brand.700"
-                borderRadius="999px"
-                px={3}
-                py={1}
-              >
-                Month-to-date
-              </Badge>
+              
+              {timeFrameButton}
             </HStack>
 
             <Center>
-              {/* keep your existing component so nothing breaks */}
-              <SpendingPieChart />
+              <SpendingPieChart timeFrame={timeFrameValue}/>
             </Center>
           </Box>
-          {/* Recent transactions header (keeps link) */}
+
+          //Line/Bar Graph that shows the spending based on time
+          <Box
+            bg={cardBg}
+            borderWidth="1px"
+            borderColor={cardBorder}
+            borderRadius="18px"
+            p={{ base: 4, md: 5 }}
+            mb={6}
+            w="100%"
+          >
+            <Center>
+              <SpendingLineChart timeFrameValue={timeFrameValue} />
+            </Center>
+          </Box>
+
+          //Transaction table that shows the most recent transactions within the time frame set 
           <HStack justify="space-between" align="baseline" mb={3}>
             <Heading size="sm" color={strongText}>
               Recent transactions
             </Heading>
 
-            {/* leaving your original route untouched */}
+            //link to full transactions page
             <Link
               href="/Transactions.html"
               color="brand.600"
@@ -273,8 +354,6 @@ export default function Dashboard() {
               View all →
             </Link>
           </HStack>
-
-          {/* Transactions table (same data + columns, nicer container) */}
           <Box
             bg={cardBg}
             borderWidth="1px"
@@ -288,46 +367,47 @@ export default function Dashboard() {
                 <Text color={subtleText}>Loading transactions…</Text>
               </HStack>
             ) : (
-              <Box overflowX="auto" p="20px">
-                <Box as="table" width="100%">
-                  <Box as="thead">
+              <Box overflowX="auto" p="20px" >
+                <Box as="table" w="100%">
+                  //table header and column labels
+                  <Box as="thead"  w='100%' bg="brand.200">
                     <Box as="tr">
-                      <Box as="th" textAlign="left" py={2} color={subtleText}>
+                      <Box width='25%' as="th" className="headerBox">
+                        Vender Name
+                      </Box>
+                      <Box as="th" className="headerBox">
                         Date
                       </Box>
-                      <Box as="th" textAlign="left" py={2} color={subtleText}>
-                        Description
-                      </Box>
-                      <Box as="th" textAlign="left" py={2} color={subtleText}>
+                      <Box as="th" className="headerBox">
                         Category
                       </Box>
-                      <Box as="th" textAlign="right" py={2} color={subtleText}>
+                      <Box as="th" className="headerBox">
                         Amount
                       </Box>
                     </Box>
                   </Box>
 
-                  <Box as="tbody">
+                  //Table body with data pulled earlier
+                  <Box as="tbody" bg="brand.50">
                     {recentTransactions.map((row) => (
                       <Box
                         as="tr"
                         key={row.transactionId}
                         color={subtleText}
                         _hover={{ bg: "blackAlpha.50" }}
-                        
                       >
-                        <Box as="td" py={2}>
-                          {formatDate(row.date)}
-                        </Box>
-                        <Box as="td" py={2} fontWeight={700}>
+                        <Box textAlign="left" as="td" py={2}>
                           {safeText(row.name)}
                         </Box>
-                        <Box as="td" py={2}>
+                        <Box textAlign="center" as="td" py={2}> 
+                          {formatDate(row.date)}
+                        </Box>
+                        <Box textAlign="center" as="td" py={2}>
                           <Badge bg="brand.100" color="brand.700">
                             {safeText(row.category)}
                           </Badge>
                         </Box>
-                        <Box as="td" py={2} color={negativeCheck(row.amount)} textAlign="right" fontWeight={800}>
+                        <Box textAlign="center" as="td" py={2} color={negativeCheck(row.amount)} fontWeight={800}>
                           {formatMoney(row.amount)}
                         </Box>
                       </Box>

@@ -1,33 +1,44 @@
+//Spending by category Pie Chart that takes Values from the DB/Plaid and Displays the amount spent per category as a pie chart 
+//with a filterable legend and hoverable labels
+/*
+  Unique Imports:
+  Chart JS components.
+  types from shared types file.
+*/
+
 import { useEffect, useMemo, useState } from "react";
 import { Pie } from "react-chartjs-2";
 import { Chart as ChartJs, ArcElement, Tooltip, Legend } from "chart.js";
 import { apiClient } from "./apiClient";
+import type {SpendingByCategoryRow, SpendingPieChartProps} from "./types";
 
-
+//chart js requires registering imports
 ChartJs.register(ArcElement, Tooltip, Legend);
 
-type SpendingByCategoryRow = {
-  category: string;
-  total: number;
-};
-
 function formatMoney(amountValue: number): string {
+  //numeric format helper for currency values
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
   }).format(amountValue);
 }
 
-export default function SpendingPieChart() {
+export default function SpendingPieChart({timeFrame}: SpendingPieChartProps) {
+  //function that ecports the chart component 
+
+  //these variables store the data by row
   const [dataRows, setDataRows] = useState<SpendingByCategoryRow[]>([]);
   const [errorText, setErrorText] = useState<string>("");
 
   useEffect(() => {
     const loadData = async () => {
+      //tries to call the server using apiclient helper to pull transaction data
       try {
         setErrorText("");
         const rowsValue = await apiClient.get<SpendingByCategoryRow[]>(
-          "/api/v1/dashboard/spending-by-category",
+          `/api/v1/dashboard/spending-by-category?timeFrame=${encodeURIComponent(
+            timeFrame,
+          )}`,
         );
         setDataRows(rowsValue);
       } catch (errValue) {
@@ -40,14 +51,15 @@ export default function SpendingPieChart() {
     };
 
     void loadData();
-  }, []);
+  }, [timeFrame]);
 
+  //variables that store the pie chart configuration
   const chartData = useMemo(() => {
     const labelsValue = dataRows.map((r) => r.category);
     const valuesValue = dataRows.map((r) => r.total);
 
     const backgroundColors = labelsValue.map((_, indexValue) => {
-      const hueValue = (indexValue * 47) % 360; // spreads colors nicely
+      const hueValue = (indexValue * 47) % 360;
       return `hsl(${hueValue} 70% 55%)`;
     });
 
@@ -109,6 +121,7 @@ export default function SpendingPieChart() {
     return <div style={{ opacity: 0.85 }}>Loading spending breakdown…</div>;
   }
 
+  //retruns the pie chart with the data.
   return (
       <Pie height="420" data={chartData} options={chartOptions} />
   );

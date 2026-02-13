@@ -458,7 +458,7 @@ app.get("/api/v1/dashboard/net-worth", requireAuth, async (req, res) => {
 
     const paramsValue = [userIdValue];
    
-    const rowsValue = await runQuery(sqlValue, paramsValue);
+    const rowsValue = await runQuery(sqlValue, userIdValue);
 
     const accountsValue = rowsValue.map((r) => {
       const typeValue = String(r.type || "").toLowerCase();
@@ -497,5 +497,151 @@ app.get("/api/v1/dashboard/net-worth", requireAuth, async (req, res) => {
   }
 });
 
+app.get("/api/v1/dashboard/budget-comparison", requireAuth, async (req, res) => {
+  try {
+    const userIdValue = req.user.userId;
+
+    const budgetsSqlValue = `
+      SELECT
+        b.budget_id AS budgetId,
+        b.name AS budgetName,
+        b.period AS period
+      FROM budgets b
+      WHERE b.user_id = ${userIdValue}
+        AND b.is_active = 1
+      ORDER BY b.created_at DESC;
+    `;
+
+    const budgetsRowsValue = await runQuery(budgetsSqlValue, [userIdValue]);
+
+    function getWindowPartsValue(periodRawValue) {
+      const periodKeyValue = String(periodRawValue || "").toLowerCase().trim();
+
+      // start + end are MySQL expressions (end is exclusive)
+      if (periodKeyValue === "weekly") {
+        return {
+          labelValue: "This week",
+          startExprValue: "DATE_SUB(NOW(), INTERVAL WEEKDAY(NOW()) DAY)",
+          endExprValue:
+            "DATE_ADD(DATE_SUB(NOW(), INTERVAL WEEKDAY(NOW()) DAY), INTERVAL 7 DAY)",
+        };
+      }
+
+      else if (periodKeyValue === "biweekly") {
+        return {
+          labelValue: "Last 14 days",
+          startExprValue: "DATE_SUB(NOW(), INTERVAL 14 DAY)",
+          endExprValue: "NOW()",
+        };
+      }
+
+      else if (periodKeyValue === "yearly" || periodKeyValue === "annual") {
+        return {
+          labelValue: "Year-to-date",
+          startExprValue: "DATE_FORMAT(NOW(), '%Y-01-01')",
+          endExprValue: "DATE_ADD(DATE_FORMAT(NOW(), '%Y-01-01'), INTERVAL 1 YEAR)",
+        };
+      }
+
+      // default: monthly
+      return {
+        labelValue: "Month-to-date",
+        startExprValue: "DATE_FORMAT(NOW(), '%Y-%m-01')",
+        endExprValue: "DATE_ADD(DATE_FORMAT(NOW(), '%Y-%m-01'), INTERVAL 1 MONTH)",
+      };
+    }
+
+    const responseBudgetsValue = [];
+
+    for (const budgetRowValue of budgetsRowsValue) {
+      const budgetIdValue = Number(budgetRowValue.budgetId);
+      const budgetNameValue = String(budgetRowValue.budgetName || "Budget");
+      const periodValue = String(budgetRowValue.period || "monthly");
+
+      const windowPartsValue = getWindowPartsValue(periodValue);
+
+      // Pull the computed window strings from MySQL so frontend displays the *exact* window being queried
+      const windowSqlValue = `
+        SELECT
+          ${windowPartsValue.startExprValue} AS windowStart,
+          ${windowPartsValue.endExprValue} AS windowEnd;
+      `;
+      
+      const windowRowsValue = await runQuery(windowSqlValue, []);
+      const windowStartValue = String(windowRowsValue?.[0]?.windowStart ?? "");
+      const windowEndValue = String(windowRowsValue?.[0]?.windowEnd ?? "");
+
+      const itemsSqlValue = `
+        SELECT
+          bi.category_id AS categoryId,
+          bc.display_name AS categoryName,
+          bc.plaid_primary_category AS plaidPrimaryCategory,
+          bi.amount AS budgetedAmount,
+          COALESCE(s.spentAmount, 0) AS spentAmount
+        FROM budget_items bi
+        JOIN budget_categories bc
+          ON bc.category_id = bi.category_id
+        LEFT JOIN (
+          SELECT
+            normalized.primaryCategoryKey,
+            SUM(normalized.spendAmount) AS spentAmount
+          FROM (
+            SELECT
+              CASE
+                /* if it's already a canonical enum, keep it */
+                WHEN pfc.primary_category REGEXP '^[A-Z_]+$' THEN pfc.primary_category
+
+                /* friendly -> canonical mappings */
+                WHEN LOWER(TRIM(pfc.primary_category)) = 'dining' OR 'groceries' THEN 'FOOD_AND_DRINK'
+                WHEN LOWER(TRIM(pfc.primary_category)) = 'gas' THEN 'TRANSPORTATION'
+                WHEN LOWER(TRIM(pfc.primary_category)) = 'shopping' THEN 'GENERAL_MERCHANDISE'
+                WHEN LOWER(TRIM(pfc.primary_category)) = 'utilities' THEN 'HOUSING'
+                WHEN LOWER(TRIM(pfc.primary_category)) = 'income' THEN 'INCOME'
+
+                /* fallback */
+                ELSE 'UNCATEGORIZED'
+              END AS primaryCategoryKey,
+              ABS(t.amount) AS spendAmount
+            FROM plaid_transactions t
+            LEFT JOIN plaid_transaction_pfc pfc
+              ON pfc.transaction_id = t.id
+            WHERE t.user_id = ${userIdValue}
+              AND t.pending = 0
+              AND t.datetime_posted >= ${windowPartsValue.startExprValue}
+              AND t.datetime_posted < ${windowPartsValue.endExprValue}
+          ) normalized
+          GROUP BY normalized.primaryCategoryKey
+        ) s
+          ON s.primaryCategoryKey = bc.plaid_primary_category
+        WHERE bi.budget_id = ?
+        ORDER BY bi.amount DESC, bc.display_name ASC;
+      `;
+
+      const itemRowsValue = await runQuery(itemsSqlValue, [userIdValue, budgetIdValue]);
+
+      responseBudgetsValue.push({
+        budgetId: budgetIdValue,
+        name: budgetNameValue,
+        period: periodValue,
+        window: {
+          label: windowPartsValue.labelValue,
+          start: windowStartValue,
+          end: windowEndValue,
+        },
+        categories: itemRowsValue.map((rValue) => ({
+          categoryId: Number(rValue.categoryId),
+          categoryName: String(rValue.categoryName || "Category"),
+          plaidPrimaryCategory: String(rValue.plaidPrimaryCategory || "Uncategorized"),
+          budgetedAmount: Number(rValue.budgetedAmount || 0),
+          spentAmount: Number(rValue.spentAmount || 0),
+        })),
+      });
+    }
+
+    return res.json({ budgets: responseBudgetsValue });
+  } catch (errValue) {
+    return res.status(500).json({ error: String(errValue) });
+  }
+});
 
 app.listen(portValue, () => console.log(`✅ API on http://localhost:${portValue}`));

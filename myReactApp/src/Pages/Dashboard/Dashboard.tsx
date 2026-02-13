@@ -2,6 +2,9 @@
   This is the dashboard page the imports that are non standard include:
   Spending pie Chart: A React Component that displays a pie chart of spending by category.
   Spending Line Chart: A React Component that displays a Line/Bar Graph of spending by time.
+  The Account toggle handler: handles filtering by spending account.
+  A net worth card shared component: shows your net worth as well as your total assests vs liabilities.
+  Budget comparison chart: A React Component that displays a Line/Bar Graph of Spending VS Budget.
   Various Types from The shared Type doc.
   Chakra elements.
 */
@@ -14,6 +17,7 @@ import SpendingPieChart from "../../Shared/SpendingPieChart";
 import SpendingLineChart from "../../Shared/SpendingLineChart";
 import AccountsToggle from "../../Shared/AccountsToggle";
 import NetWorthCard from "../../Shared/NetWorthCard";
+import BudgetComparisonChart from "../../Shared/BudgetComparisonChart";
 import {
   Badge,
   Box,
@@ -317,8 +321,24 @@ export default function Dashboard() {
             </Box>
 
             <NetWorthCard />
-          </Grid>
 
+            {/*Budget comparison card*/}
+           
+          </Grid>
+          
+          <Box h="1px" w="100%" bg="blackAlpha.100" my={6} />
+          
+          <Box
+            bg={cardBg}
+            borderWidth="1px"
+            borderColor={cardBorder}
+            borderRadius="18px"
+            p={{ base: 4, md: 5 }}
+            mb={6}
+            w="100%"
+          >
+            <BudgetComparisonChart />
+          </Box>
           <Box h="1px" w="100%" bg="blackAlpha.100" my={6} />
 
           {/*Pie chart that shows spending based on categories*/}

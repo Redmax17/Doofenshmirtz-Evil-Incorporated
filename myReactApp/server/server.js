@@ -1,7 +1,6 @@
 //Temporary Server/Backend that can be used to develop PAges before full backend is completed.
 //can also be used as an example for real DB when implementing calls for the Page(s) this was testing.
 
-
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -9,7 +8,6 @@ import { runQuery } from "./db.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { requireAuth } from "./authMiddleware.js";
-
 
 dotenv.config();
 
@@ -59,7 +57,6 @@ function getTimeFrameWhereClause(timeFrameValue) {
   if (timeFrameValue === "all") return `t.datetime_posted IS NOT NULL`;
   return `t.datetime_posted >= DATE_SUB(NOW(), INTERVAL 30 DAY)`;
 }
-
 
 function getTimeFrameLabel(timeFrameValue) {
   if (timeFrameValue === "mtd") {
@@ -333,7 +330,6 @@ app.post("/api/auth/login", async (req, res) => {
     return res.status(500).json({ error: String(errValue) });
   }
 });
-
   
 /*GET /api/v1/dashboard/spending-trend?timeFrame=...*/  
 app.get("/api/v1/dashboard/spending-over-time", requireAuth, async (req, res) => {
@@ -433,7 +429,6 @@ app.get("/api/v1/accounts", requireAuth, async (req, res) => {
     res.status(500).json({ error: String(errValue) });
   }
 });
-
 
 app.get("/api/auth/me", requireAuth, async (req, res) => {
   return res.json({ user: req.user });

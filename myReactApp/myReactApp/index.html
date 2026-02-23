@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Income Generator-Inator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    header {
+      padding: 2rem;
+      text-align: center;
+      border-bottom: 1px solid #1f2933;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+      letter-spacing: 0.5px;
+    }
+
+    header p {
+      margin-top: 0.5rem;
+      color: #9ca3af;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .nav-card {
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    .nav-card:hover {
+      transform: translateY(-3px);
+      border-color: #38bdf8;
+    }
+
+    .nav-card h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.1rem;
+    }
+
+    .nav-card p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #9ca3af;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>Income Generator-Inator</h1>
+    <p>Your personal finance hub</p>
+  </header>
+
+  <main>
+    <a class="nav-card" href="/login.html">
+      <h3>Login</h3>
+      <p>Sign in to your account</p>
+    </a>
+
+    <a class="nav-card" href="/register.html">
+      <h3>Register</h3>
+      <p>Create a new account</p>
+    </a>
+
+    <a class="nav-card" href="/dashboard.html">
+      <h3>Dashboard</h3>
+      <p>Overview of budgets and activity</p>
+    </a>
+
+    <a class="nav-card" href="/budgets.html">
+      <h3>Budgets</h3>
+      <p>Manage monthly budgets</p>
+    </a>
+
+    <a class="nav-card" href="/transactions.html">
+      <h3>Transactions</h3>
+      <p>View spending and income</p>
+    </a>
+
+    <a class="nav-card" href="/analytics.html">
+      <h3>Analytics</h3>
+      <p>Spending trends and insights</p>
+    </a>
+
+    <a class="nav-card" href="/account.html">
+      <h3>Account Settings</h3>
+      <p>Profile, bank links, preferences</p>
+    </a>
+
+    <a class="nav-card" href="/password-reset.html">
+      <h3>Password Reset</h3>
+      <p>Recover account access</p>
+    </a>
+  </main>
+
+  <footer>
+    © 2026 Income Generator-Inator
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,55 @@
+{
+  "hash": "68e7ae90",
+  "configHash": "8880b1b0",
+  "lockfileHash": "b78a5901",
+  "browserHash": "f409bfa1",
+  "optimized": {
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "abebae56",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "0c95a73a",
+      "needsInterop": true
+    },
+    "@chakra-ui/react": {
+      "src": "../../node_modules/@chakra-ui/react/dist/esm/index.js",
+      "file": "@chakra-ui_react.js",
+      "fileHash": "41105aa0",
+      "needsInterop": false
+    },
+    "react-chartjs-2": {
+      "src": "../../node_modules/react-chartjs-2/dist/index.js",
+      "file": "react-chartjs-2.js",
+      "fileHash": "b248d46a",
+      "needsInterop": false
+    },
+    "chart.js": {
+      "src": "../../node_modules/chart.js/dist/chart.js",
+      "file": "chart__js.js",
+      "fileHash": "66f7b355",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-NMKASA5A": {
+      "file": "chunk-NMKASA5A.js"
+    },
+    "chunk-QWLGDH22": {
+      "file": "chunk-QWLGDH22.js"
+    },
+    "chunk-HIUQ7PRQ": {
+      "file": "chunk-HIUQ7PRQ.js"
+    },
+    "chunk-ZC7HT7OM": {
+      "file": "chunk-ZC7HT7OM.js"
+    },
+    "chunk-G3PMV62Z": {
+      "file": "chunk-G3PMV62Z.js"
+    }
+  }
+}

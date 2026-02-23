@@ -1,0 +1,216 @@
+/* dashboard.css */
+/*this is secondary to the Chakra framework to provide an in depth adjustment to the broad framework chakra provided
+and to customize based on our color scheme more eaasily.*/
+
+:root {
+  /* Our Main Color Palette */
+  --brand-500: #9282ba;
+  --brand-600: #6f65a0;
+  --slate-500: #656a62;
+  --accent-400: #5dc89b;
+  --accent-500: #73f3bd;
+
+  /* Surfaces */
+  --bg-canvas: #f7f7f8;
+  --bg-surface: #ffffff;
+  --border-subtle: rgba(31, 35, 39, 0.12);
+
+  --text-strong: #1f2327;
+  --text-muted: #565a62;
+
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --shadow-sm: 0 6px 16px rgba(31, 35, 39, 0.08);
+}
+
+/* Base */
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-canvas);
+  color: var(--text-strong);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--brand-600);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+}
+
+.dashboardBg {
+  background:
+    radial-gradient(900px 400px at 15% 0%, rgba(146,130,186,0.14), transparent 60%),
+    radial-gradient(700px 300px at 90% 10%, rgba(93,200,155,0.14), transparent 55%),
+    var(--bg-canvas);
+}
+
+.dashboardContainer {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 18px;
+}
+
+.dashboardCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.dashboardCardHeader {
+  padding: 18px 18px 0 18px;
+}
+
+.dashboardCardBody {
+  padding: 18px;
+}
+
+.mutedText {
+  color: var(--text-muted);
+}
+
+.strongText {
+  color: var(--text-strong);
+  font-weight: 800;
+}
+
+/* Divider replacement (since Chakra v3 removed <Divider /> tag) */
+.dashboardDivider {
+  height: 1px;
+  width: 100%;
+  background: var(--border-subtle);
+  margin: 24px 0;
+}
+
+/* Buttons for any legacy <button> elements (Chakra Buttons ignore this) */
+.legacyButton {
+  background: var(--brand-500);
+  color: white;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.legacyButton:hover {
+  filter: brightness(0.98);
+}
+
+.legacyButton:active {
+  transform: translateY(1px);
+}
+
+.legacyButtonOutline {
+  background: transparent;
+  color: var(--brand-600);
+  border: 1px solid rgba(111,101,160,0.35);
+}
+
+.legacyButtonOutline:hover {
+  background: rgba(146,130,186,0.10);
+}
+
+/*transactions table format*/
+.dashboardTableWrap {
+  overflow-x: auto;
+}
+
+.dashboardTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--bg-surface);
+}
+
+.dashboardTable thead th {
+  text-align: left;
+  font-size: 12.5px;
+  letter-spacing: 0.2px;
+  color: var(--text-muted);
+  font-weight: 900;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(146,130,186,0.06);
+}
+
+.dashboardTable tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(31,35,39,0.08);
+  vertical-align: middle;
+}
+
+.dashboardTable tbody tr:hover td {
+  background: rgba(93,200,155,0.08);
+}
+
+.dashboardTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Rounded corners for the table container */
+.dashboardTable thead th:first-child {
+  border-top-left-radius: var(--radius-lg);
+}
+
+.dashboardTable thead th:last-child {
+  border-top-right-radius: var(--radius-lg);
+}
+
+/* Small badges for legacy spans (Chakra Badge ignores this) */
+.legacyBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--text-strong);
+  background: rgba(93,200,155,0.28);
+}
+
+/* Scrollbar */
+.dashboardTableWrap::-webkit-scrollbar {
+  height: 10px;
+}
+
+.dashboardTableWrap::-webkit-scrollbar-thumb {
+  background: rgba(101,106,98,0.35);
+  border-radius: 999px;
+}
+
+.dashboardTableWrap::-webkit-scrollbar-track {
+  background: rgba(31,35,39,0.06);
+  border-radius: 999px;
+}
+
+.pieChartOuter {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.pieChartInner Pie{
+  object-fit:"cover"
+}
+
+.headerBox{
+  text-align:"center";
+  color: var(--text-strong);
+  font-weight: 800;
+}

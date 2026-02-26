@@ -6,7 +6,7 @@ import {
     signIn as amplifySignIn,
     signOut as amplifySignOut,
     getCurrentUser,
-    AuthUser
+    type AuthUser
 } from 'aws-amplify/auth';
 import type { AuthContextType, SignInResult } from '../types/auth';
 

@@ -1,3 +1,6 @@
+//Defines all the TypeScript interfaces and types used throughout the
+// authentication system
+
 // Import Auth type from AWS Amplify for proper typing
 import type { AuthUser } from 'aws-amplify/auth';
 

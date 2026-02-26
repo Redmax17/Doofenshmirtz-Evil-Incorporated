@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import type { RequireAuthProps } from '../types/auth';
 
 export const RequireAuth: React.FC<RequireAuthProps> = ({
-    childern,
+    children,
     redirectTo = '/login'
 }) => {
     //Get auth state from our context
@@ -39,5 +39,5 @@ export const RequireAuth: React.FC<RequireAuthProps> = ({
     }
 
     //Render childern if authenticated
-    return isAuthenticated ? <>{childern}</> : null;
+    return isAuthenticated ? <>{children}</> : null;
 };

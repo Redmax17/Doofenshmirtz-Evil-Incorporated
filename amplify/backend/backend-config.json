@@ -1,0 +1,43 @@
+{
+  "api": {
+    "REST": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "function",
+          "resourceName": "databaseConnection"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "API Gateway"
+    }
+  },
+  "function": {
+    "databaseConnection": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_function_databaseConnection_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "databaseConnection"
+        }
+      ]
+    },
+    "AMPLIFY_function_databaseConnection_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "databaseConnection"
+        }
+      ]
+    }
+  }
+}

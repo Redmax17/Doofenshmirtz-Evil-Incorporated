@@ -1,9 +1,9 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "../../Styles/index.css";
+import "../../Styles/theme";
+import Budgets from "./Budgets";
 import {system} from "../../Styles/theme"
 import { ChakraProvider } from "@chakra-ui/react";
-import Budgets from "./Budgets";
 
 const rootElement = document.getElementById("root");
 

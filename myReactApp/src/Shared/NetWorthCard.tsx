@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiClient } from "./apiClient";
 import { Box, HStack, Input, Spinner, Stack, Text } from "@chakra-ui/react";
 import { formatMoney, parseMoneyInput } from "./SharedFunctions";
-import {NetWorthResponse} from "./types"
+import type {NetWorthResponse} from "./types"
 
 export default function NetWorthCard({ accountIdValue = "all" }: { accountIdValue?: string }) {
   const [dataValue, setDataValue] = useState<NetWorthResponse | null>(null);

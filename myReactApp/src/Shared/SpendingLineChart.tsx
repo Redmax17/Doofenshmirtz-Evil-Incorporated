@@ -21,7 +21,7 @@ import {
   Filler,
 } from "chart.js";
 import { apiClient } from "../Shared/apiClient"; // adjust path if needed
-import {SpendingOverTimeResponse, LineChartProps, TimeFrameKey, SpendingOverTimePoint, TimeGrouping} from "./types"
+import type { SpendingOverTimeResponse, LineChartProps, TimeFrameKey, SpendingOverTimePoint, TimeGrouping } from "./types";
 import {
   startOfDayValue,
   addDaysValue,
@@ -178,6 +178,7 @@ export default function SpendingLineChart({ titleValue = "Spending Over Time", t
         if (!isMountedValue) return;
         setErrorValue(errValue instanceof Error ? errValue.message : String(errValue));
       } finally {
+        // eslint-disable-next-line no-unsafe-finally
         if (!isMountedValue) return;
         setIsLoadingValue(false);
       }

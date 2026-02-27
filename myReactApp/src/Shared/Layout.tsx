@@ -54,7 +54,7 @@ function NavLink(navItem: NavItem) {
   );
 }
 
-export function TopNav(props: {activePage : String}) {
+export function TopNav(props: {activePage : string}) {
   const { activePage } = props;
 
   const navItems: NavItem[] = [

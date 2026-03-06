@@ -1,6 +1,5 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "../../Styles/index.css";
 import Analytics from "./Analytics";
 
 const rootElement = document.getElementById("root");

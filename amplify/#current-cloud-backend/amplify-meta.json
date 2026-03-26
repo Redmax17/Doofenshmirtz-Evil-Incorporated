@@ -1,0 +1,70 @@
+{
+  "providers": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-doofenshmirtzevilinc-dev-bfd09-authRole",
+      "UnauthRoleArn": "arn:aws:iam::123040040691:role/amplify-doofenshmirtzevilinc-dev-bfd09-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::123040040691:role/amplify-doofenshmirtzevilinc-dev-bfd09-authRole",
+      "Region": "us-east-1",
+      "DeploymentBucketName": "amplify-doofenshmirtzevilinc-dev-bfd09-deployment",
+      "UnauthRoleName": "amplify-doofenshmirtzevilinc-dev-bfd09-unauthRole",
+      "StackName": "amplify-doofenshmirtzevilinc-dev-bfd09",
+      "StackId": "arn:aws:cloudformation:us-east-1:123040040691:stack/amplify-doofenshmirtzevilinc-dev-bfd09/6c04fa30-1282-11f1-87c8-0afff1e6a7ad",
+      "AmplifyAppId": "d3huz8jmzicujb"
+    }
+  },
+  "function": {
+    "databaseConnection": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda",
+      "lastBuildTimeStamp": "2026-02-25T20:14:27.342Z",
+      "lastBuildType": "PROD",
+      "lastPackageTimeStamp": "2026-02-25T20:14:29.598Z",
+      "distZipFilename": "databaseConnection-6a5a6733316734644569-build.zip",
+      "s3Bucket": {
+        "deploymentBucketName": "amplify-doofenshmirtzevilinc-dev-bfd09-deployment",
+        "s3Key": "amplify-builds/databaseConnection-6a5a6733316734644569-build.zip"
+      },
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-doofenshmirtzevilinc-dev-bfd09-deployment/amplify-cfn-templates/function/databaseConnection-cloudformation-template.json",
+        "logicalId": "functiondatabaseConnection"
+      },
+      "lastPushTimeStamp": "2026-02-25T20:15:55.274Z",
+      "output": {
+        "LambdaExecutionRoleArn": "arn:aws:iam::123040040691:role/doofenshmirtzevilincLambdaRole7a4137e3-dev",
+        "Region": "us-east-1",
+        "Arn": "arn:aws:lambda:us-east-1:123040040691:function:databaseConnection-dev",
+        "Name": "databaseConnection-dev",
+        "LambdaExecutionRole": "doofenshmirtzevilincLambdaRole7a4137e3-dev"
+      },
+      "lastPushDirHash": "xNrSK9nC+UZlk5kv8pnjkcXlFmk="
+    }
+  },
+  "api": {
+    "REST": {
+      "service": "API Gateway",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [
+        {
+          "category": "function",
+          "resourceName": "databaseConnection",
+          "attributes": [
+            "Name",
+            "Arn"
+          ]
+        }
+      ],
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-doofenshmirtzevilinc-dev-bfd09-deployment/amplify-cfn-templates/api/REST-cloudformation-template.json",
+        "logicalId": "apiREST"
+      },
+      "lastPushTimeStamp": "2026-02-25T20:15:55.274Z",
+      "output": {
+        "ApiName": "REST",
+        "RootUrl": "https://wr09byx6u6.execute-api.us-east-1.amazonaws.com/dev",
+        "ApiId": "wr09byx6u6"
+      },
+      "lastPushDirHash": "Za2kIi8tsBdmPuXhv4okyzJdpzA="
+    }
+  }
+}

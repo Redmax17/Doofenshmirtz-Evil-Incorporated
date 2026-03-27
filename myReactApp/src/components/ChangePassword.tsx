@@ -1,3 +1,5 @@
+// Used For Allowing Signed In Users To Change Password Within Settings
+
 import { useState } from "react";
 import { updatePassword } from "aws-amplify/auth";
 

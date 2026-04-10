@@ -19,6 +19,12 @@ import {
   Text,
   AbsoluteCenter,
   Center,
+  Checkbox,
+  Switch,
+  InputGroup,
+  InputElement,
+  InputAddon,
+  Input,
 } from "@chakra-ui/react";
 
 export default function Account() {
@@ -29,13 +35,15 @@ export default function Account() {
   const cardBorder = "blackAlpha.100";
   const subtleText = "brand.700";
   const strongText = "brand.900";
+  const greenColor = "accent.400";
+
 
   return (
     <Layout activePage="account">
       <Box bg={pageBg} minH="calc(100vh - 1px)">
         <Container maxW="6x1" py={{ base: 6, md: 10 }}>
           {/* Page Header */}
-          <Stack gap={2} mb={6}>
+          <Stack gap={2} mb={3}>
             <HStack justify="space-between" align="center" flexWrap="wrap" gap={3}>
               <Heading size="lg" color={strongText}>
                 Account Settings
@@ -43,40 +51,139 @@ export default function Account() {
             </HStack>
           </Stack>
 
-          {/* Page Content */}
-          <Box h="1px" w="100%" bg="blackAlpha.100" my={6}>
+          <Box h="1px" w="100%" bg="blackAlpha.100" my={3} />
 
+          {/* Page Content */}
+          <Stack gap={6}>
             {/* Notification Settings */}
             <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="18px" p={5}>
               {/* Card Header */}
-              <Text fontSize="m" fontWeight={900} color="accent.400">
+              <Text fontSize="m" fontWeight={900} color={greenColor}>
                 Notifications
               </Text>
 
               <Box h="1px" w="100%" bg="blackAlpha.100" my={2} />
 
               {/* Card Content */}
-              <Grid templateColumns={{ base: "2fr", md: "repeat(2, 2fr)" }} gap={4} w="100%">
-                {/* Overspending Alert */}
-                <HStack w="100%">
-                  <Stack gap={1} mb={2} w="100%">
-                    <Text fontSize="sm">
-                      Overspending Alert
-                    </Text>
-                    <Text fontSize="xs">
-                      Alert me when I go above my set budget
-                    </Text>
-                  </Stack>
 
-                  <input type="checkbox"></input>
-                </HStack>
+              {/* Overspending Alert */}
+              <HStack w="95%">
+                {/* Overspending Alert Title And Subtitle */}
+                <Stack gap={1} mb={2} w="100%">
+                  <Text fontSize="sm">
+                    Overspending Alert
+                  </Text>
+                  <Text fontSize="xs">
+                    Alert me when I go above my set budget
+                  </Text>
+                </Stack>
 
+                {/* Overspending Toggle Switch */}
+                <Switch.Root colorPalette={"green"}>
+                  <Switch.HiddenInput />
+                  <Switch.Control>
+                    <Switch.Thumb />
+                  </Switch.Control>
+                  <Switch.Label />
+                </Switch.Root>
+              </HStack>
 
-              </Grid>
+              {/* Low Balance Alert */}
+              <HStack w="95%">
+                {/* Low Balance Alert Title And Subtitle */}
+                <Stack gap={1} mb={2} w="100%">
+                  <Text fontSize="sm">
+                    Low Balance Alert
+                  </Text>
+                  <Text fontSize="xs">
+                    Alert me when I have a low balance
+                  </Text>
+                </Stack>
 
+                {/* Low Balance Alert Toggle Switch */}
+                <Switch.Root colorPalette={"green"}>
+                  <Switch.HiddenInput />
+                  <Switch.Control>
+                    <Switch.Thumb />
+                  </Switch.Control>
+                  <Switch.Label />
+                </Switch.Root>
+              </HStack>
+
+              {/* Large Transaction Alert */}
+              <HStack w="95%">
+                {/* Large Transaction Alert Title And Subtitle */}
+                <Stack gap={1} mb={2} w="100%">
+                  <Text fontSize="sm">
+                    Large Transaction Alert
+                  </Text>
+                  <Text fontSize="xs">
+                    Alert me when there is a large transaction
+                  </Text>
+                </Stack>
+
+                {/* Large Transaction Alert Toggle Switch */}
+                <Switch.Root colorPalette={"green"}>
+                  <Switch.HiddenInput />
+                  <Switch.Control>
+                    <Switch.Thumb />
+                  </Switch.Control>
+                  <Switch.Label />
+                </Switch.Root>
+              </HStack>
+
+              <Box h="1px" w="100%" bg="blackAlpha.100" my={1}></Box>
+
+              {/* Low Balance Threshold */}
+              <HStack w="95%">
+                {/* Low Balance Threshold Title And Subtitle */}
+                <Stack gap={1} mb={2} w="100%">
+                  <Text fontSize="sm">
+                    Low Balance Threshold
+                  </Text>
+                  <Text fontSize="xs">
+                    What amount should we notify you at?
+                  </Text>
+                </Stack>
+
+                {/* Low Balance Threshold Input */}
+                <InputGroup startElement="$" w="25%" >
+                  <Input type="number" defaultValue={50} background={"white"}></Input>
+                </InputGroup>
+              </HStack>
             </Box>
 
-          </Box>
+            <Box h="1px" w="100%" bg="blackAlpha.100" my={1} />
+
+            {/* Linked Account Settings */}
+            <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="18px" p={5}>
+              {/* Card Header */}
+              <Text fontSize="m" fontWeight={900} color={greenColor}>
+                Linked Accounts
+              </Text>
+
+              <Box h="1px" w="100%" bg="blackAlpha.100" my={2} />
+
+              {/* Card Content */}
+
+              {/* List Of Linked Accounts */}
+              <HStack w="95%">
+                {/* List Of Linked Accounts Title And Subtitle */}
+                <Stack gap={1} mb={2} w="100%">
+                  <Text fontSize="sm">
+                    List Of Linked Accounts
+                  </Text>
+                  <Text fontSize="xs">
+                    View A List Of Linked Accounts
+                  </Text>
+                </Stack>
+
+                {/* Button For Drop Down */}
+
+              </HStack>
+            </Box>
+
+          </Stack>
         </Container>
       </Box>
     </Layout>

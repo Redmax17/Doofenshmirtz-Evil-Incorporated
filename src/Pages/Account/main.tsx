@@ -1,6 +1,10 @@
+// How the Account Settings page is initalized from Account.html
 import React from "react";
 import ReactDOM from "react-dom/client";
+import "../../Styles/Dashboard.css";
 import Account from "./Account";
+import { system } from "../../Styles/theme";
+import { ChakraProvider } from "@chakra-ui/react";
 
 const rootElement = document.getElementById("root");
 
@@ -10,6 +14,8 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <Account />
+    <ChakraProvider value={system}>
+      <Account />
+    </ChakraProvider>
   </React.StrictMode>
 );

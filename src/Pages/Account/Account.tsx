@@ -25,6 +25,11 @@ import {
   InputElement,
   InputAddon,
   Input,
+  Menu,
+  MenuRoot,
+  MenuTrigger,
+  MenuContent,
+  MenuItem,
 } from "@chakra-ui/react";
 
 export default function Account() {
@@ -167,25 +172,39 @@ export default function Account() {
               {/* Card Content */}
 
               {/* List Of Linked Accounts */}
-              <HStack w="95%">
-                {/* List Of Linked Accounts Title And Subtitle */}
-                <Stack gap={1} mb={2} w="100%">
-                  <Text fontSize="sm">
-                    List Of Linked Accounts
-                  </Text>
-                  <Text fontSize="xs">
-                    View A List Of Linked Accounts
-                  </Text>
-                </Stack>
+              <MenuRoot>
+                <HStack w="95%">
+                  {/* List Of Linked Accounts Title And Subtitle */}
+                  <Stack gap={1} mb={2} w="100%">
+                    <Text fontSize="sm">
+                      List Of Linked Accounts
+                    </Text>
+                    <Text fontSize="xs">
+                      View A List Of Linked Accounts
+                    </Text>
+                  </Stack>
 
-                {/* Button For Drop Down */}
+                  {/* Button For Drop Down */}
+                  <MenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      Veiw Accounts
+                    </Button>
+                  </MenuTrigger>
 
-              </HStack>
+                </HStack>
+                <MenuContent w="75%" css={{ transform: "translateX(15%)" }} >
+                  <Button variant={"outline"} background={greenColor}>
+                    Add Account
+                  </Button>
+                </MenuContent>
+              </MenuRoot>
             </Box>
+
+            <Box h="1px" w="100%" bg="blackAlpha.100" my={1} />
 
           </Stack>
         </Container>
       </Box>
-    </Layout>
+    </Layout >
   );
 }

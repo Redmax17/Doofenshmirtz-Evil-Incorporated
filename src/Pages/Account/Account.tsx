@@ -40,10 +40,19 @@ export default function Account() {
   const pageBg = "brand.100";
   const cardBg = "brand.50";
   const cardBorder = "blackAlpha.100";
-  const subtleText = "brand.700";
   const strongText = "brand.900";
   const greenColor = "accent.400";
 
+  // State For Notifications
+  const [overspending, setOverspending] = useState(false);
+  const [lowBalance, setLowBalance] = useState(false);
+  const [largeTransaction, setLargeTransaction] = useState(false);
+  const [lowBalanceThreshold, setLowBalanceThreshold] = useState(50);
+
+  // State For Linked Accounts
+  // *TO DO*
+  // Use Plaid To Link Accounts And Store Them Here
+  const [accounts, setAccounts] = useState();
 
   return (
     <Layout activePage="account">
@@ -86,9 +95,12 @@ export default function Account() {
                 </Stack>
 
                 {/* Overspending Toggle Switch */}
-                <Switch.Root colorPalette={"green"}>
+                <Switch.Root
+                  colorPalette={"green"}
+                  checked={overspending}
+                  onCheckedChange={e => setOverspending(e.checked)}>
                   <Switch.HiddenInput />
-                  <Switch.Control>
+                  <Switch.Control >
                     <Switch.Thumb />
                   </Switch.Control>
                   <Switch.Label />
@@ -108,7 +120,10 @@ export default function Account() {
                 </Stack>
 
                 {/* Low Balance Alert Toggle Switch */}
-                <Switch.Root colorPalette={"green"}>
+                <Switch.Root
+                  colorPalette={"green"}
+                  checked={lowBalance}
+                  onCheckedChange={e => setLowBalance(e.checked)}>
                   <Switch.HiddenInput />
                   <Switch.Control>
                     <Switch.Thumb />
@@ -130,7 +145,10 @@ export default function Account() {
                 </Stack>
 
                 {/* Large Transaction Alert Toggle Switch */}
-                <Switch.Root colorPalette={"green"}>
+                <Switch.Root
+                  colorPalette={"green"}
+                  checked={largeTransaction}
+                  onCheckedChange={e => setLargeTransaction(e.checked)}>
                   <Switch.HiddenInput />
                   <Switch.Control>
                     <Switch.Thumb />
@@ -155,7 +173,7 @@ export default function Account() {
 
                 {/* Low Balance Threshold Input */}
                 <InputGroup startElement="$" w="25%" >
-                  <Input type="number" defaultValue={50} background={"white"}></Input>
+                  <Input type="number" defaultValue={lowBalanceThreshold} background={"white"} onChange={e => setLowBalanceThreshold(Number(e.target.value))}></Input>
                 </InputGroup>
               </HStack>
             </Box>

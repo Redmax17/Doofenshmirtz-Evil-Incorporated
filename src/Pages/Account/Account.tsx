@@ -177,10 +177,10 @@ export default function Account() {
                   {/* List Of Linked Accounts Title And Subtitle */}
                   <Stack gap={1} mb={2} w="100%">
                     <Text fontSize="sm">
-                      List Of Linked Accounts
+                      List Of Linked Bank Accounts
                     </Text>
                     <Text fontSize="xs">
-                      View A List Of Linked Accounts
+                      View A List Of Linked Bank Accounts
                     </Text>
                   </Stack>
 
@@ -201,6 +201,68 @@ export default function Account() {
             </Box>
 
             <Box h="1px" w="100%" bg="blackAlpha.100" my={1} />
+
+            <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="18px" p={5}>
+              <Text fontSize="m" fontWeight={900} color={greenColor}>
+                Data And Privacy
+              </Text>
+
+              <Box h="1px" w="100%" bg="blackAlpha.100" my={2} />
+
+              {/* Privacy Policy */}
+              <HStack w="95%">
+                {/* Privacy Policy Title And Subtitle */}
+                <Stack gap={1} mb={2} w="100%">
+                  <Text fontSize="sm">
+                    View Privacy Policy
+                  </Text>
+                  <Text fontSize="xs">
+                    View The Privacy Policy Of This App
+                  </Text>
+                </Stack>
+
+                {/* View Button */}
+                <Button variant={"outline"}>
+                  View
+                </Button>
+              </HStack>
+
+              {/* Unlink Accounts */}
+              <HStack w="95%">
+                {/* Unlink Accounts Title And Subtitle */}
+                <Stack gap={1} mb={2} w="100%">
+                  <Text fontSize="sm">
+                    Unlink Bank Accounts
+                  </Text>
+                  <Text fontSize="xs">
+                    Unlink All Bank Accounts
+                  </Text>
+                </Stack>
+
+                {/* Unlink Accounts Button */}
+                <Button variant={"outline"} backgroundColor={"red.500"}>
+                  Unlink
+                </Button>
+              </HStack>
+
+              {/* Delete Account */}
+              <HStack w="95%">
+                {/* Delete Account Title And Subtitle */}
+                <Stack gap={1} mb={2} w="100%">
+                  <Text fontSize="sm">
+                    View Privacy Policy
+                  </Text>
+                  <Text fontSize="xs">
+                    View The Privacy Policy Of This App
+                  </Text>
+                </Stack>
+
+                {/* Delete Account Button */}
+                <Button variant={"outline"} backgroundColor={"red.500"}>
+                  Delete
+                </Button>
+              </HStack>
+            </Box>
 
           </Stack>
         </Container>

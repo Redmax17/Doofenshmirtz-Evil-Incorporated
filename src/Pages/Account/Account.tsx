@@ -30,6 +30,8 @@ import {
   MenuTrigger,
   MenuContent,
   MenuItem,
+  Dialog,
+  Portal
 } from "@chakra-ui/react";
 
 export default function Account() {
@@ -239,10 +241,42 @@ export default function Account() {
                   </Text>
                 </Stack>
 
-                {/* Unlink Accounts Button */}
-                <Button variant={"outline"} backgroundColor={"red.500"}>
-                  Unlink
-                </Button>
+                {/* Unlink Accounts Dialog */}
+                <Dialog.Root size={"sm"} key={"sm"}>
+                  <Dialog.Trigger asChild>
+                    <Button variant={"outline"} backgroundColor={"red.500"}>
+                      Unlink
+                    </Button>
+                  </Dialog.Trigger>
+                  <Portal>
+                    <Dialog.Backdrop />
+                    <Dialog.Positioner>
+                      <Dialog.Content>
+                        <Dialog.Header>
+                          <Dialog.Title>
+                            Unlink Bank Accounts Confirmation
+                          </Dialog.Title>
+                        </Dialog.Header>
+                        <Dialog.Body m={2}>
+                          <Stack gap={2}>
+                            <Center>
+                              <Text>Type "Unlink" To Confirm</Text>
+                            </Center>
+                            <Center>
+                              <Input type="text" background={"white"} w={"75%"}></Input>
+                            </Center>
+                          </Stack>
+                        </Dialog.Body>
+                        <Dialog.Footer>
+                          <Dialog.ActionTrigger asChild>
+                            <Button variant={"outline"}>Cancel</Button>
+                          </Dialog.ActionTrigger>
+                          <Button variant={"outline"} backgroundColor={greenColor}>Confirm</Button>
+                        </Dialog.Footer>
+                      </Dialog.Content>
+                    </Dialog.Positioner>
+                  </Portal>
+                </Dialog.Root>
               </HStack>
 
               {/* Delete Account */}
@@ -257,13 +291,44 @@ export default function Account() {
                   </Text>
                 </Stack>
 
-                {/* Delete Account Button */}
-                <Button variant={"outline"} backgroundColor={"red.500"}>
-                  Delete
-                </Button>
+                {/* Delete Account Dialog */}
+                <Dialog.Root size={"sm"} key={"sm"}>
+                  <Dialog.Trigger asChild>
+                    <Button variant={"outline"} backgroundColor={"red.500"}>
+                      Delete
+                    </Button>
+                  </Dialog.Trigger>
+                  <Portal>
+                    <Dialog.Backdrop />
+                    <Dialog.Positioner>
+                      <Dialog.Content>
+                        <Dialog.Header>
+                          <Dialog.Title>
+                            Delete Account Confirmation
+                          </Dialog.Title>
+                        </Dialog.Header>
+                        <Dialog.Body m={2}>
+                          <Stack gap={2}>
+                            <Center>
+                              <Text>Type "Delete" To Confirm</Text>
+                            </Center>
+                            <Center>
+                              <Input type="text" background={"white"} w={"75%"}></Input>
+                            </Center>
+                          </Stack>
+                        </Dialog.Body>
+                        <Dialog.Footer>
+                          <Dialog.ActionTrigger asChild>
+                            <Button variant={"outline"}>Cancel</Button>
+                          </Dialog.ActionTrigger>
+                          <Button variant={"outline"} backgroundColor={greenColor}>Confirm</Button>
+                        </Dialog.Footer>
+                      </Dialog.Content>
+                    </Dialog.Positioner>
+                  </Portal>
+                </Dialog.Root>
               </HStack>
             </Box>
-
           </Stack>
         </Container>
       </Box>

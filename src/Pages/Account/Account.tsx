@@ -33,7 +33,14 @@ import {
   Dialog,
   Portal
 } from "@chakra-ui/react";
+import { generateClient } from "aws-amplify/api";
+import { getCurrentUser } from "aws-amplify/auth";
+import type { Schema } from "../../../amplify/data/resource";
 
+// Generates The Amplify Data Client 
+const client = generateClient<Schema>();
+
+// Defines Account Page And Actions
 export default function Account() {
 
   // Style Variables
@@ -42,6 +49,8 @@ export default function Account() {
   const cardBorder = "blackAlpha.100";
   const strongText = "brand.900";
   const greenColor = "accent.400";
+
+  const [settingsId, setSettingsId] = useState<string | null>(null);
 
   // State For Notifications
   const [overspending, setOverspending] = useState(false);
@@ -54,6 +63,60 @@ export default function Account() {
   // Use Plaid To Link Accounts And Store Them Here
   const [accounts, setAccounts] = useState();
 
+  // Gets The User's Existing Settings From Amplify
+  // Owner Auth Means Users Can Only See There Own Information
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const { data } = await client.models.UserSettings.list();
+
+        if (data.length > 0) {
+          // Users Should Only Have 1 Record So We Pick The Top Everytime
+          const s = data[0];
+          setSettingsId(s.id);
+
+          setOverspending(s.overSpendingNotification ?? false);
+          setLowBalance(s.lowBalanceNotification ?? false);
+          setLargeTransaction(s.largeTransactionNotification ?? false);
+          setLowBalanceThreshold(s.lowBalanceThreshold ?? 50);
+        }
+      } catch (error) {
+        console.error("Error Loading Settings Data:", error);
+      }
+    }
+    loadSettings();
+  }, [])
+
+  // *TODO*: Add Bank Accounts
+  // Gets All Linked Bank Accounts
+
+  // Creates A New Save If One Does Not Exist
+  // Or Updates The Existing One
+  async function handleSave() {
+    try {
+      const payload = {
+        overspending,
+        lowBalance,
+        largeTransaction,
+        lowBalanceThreshold
+      };
+
+      // Checks If Record Exists
+      if (settingsId) {
+        // If The Record Exists We Save To It
+        await client.models.UserSettings.update({ id: settingsId, ...payload });
+      } else {
+        // If There Is No Record We Create A New One And Store It
+        const { data } = await client.models.UserSettings.create(payload);
+        setSettingsId(data?.id ?? null);
+      }
+
+      console.log("Settings Saved Successfull");
+    } catch (error) {
+      console.error("Error Saving Settings:", error);
+    }
+  }
+
   return (
     <Layout activePage="account">
       <Box bg={pageBg} minH="calc(100vh - 1px)">
@@ -64,6 +127,7 @@ export default function Account() {
               <Heading size="lg" color={strongText}>
                 Account Settings
               </Heading>
+              <Button onClick={() => handleSave()} backgroundColor={greenColor}>Save</Button>
             </HStack>
           </Stack>
 

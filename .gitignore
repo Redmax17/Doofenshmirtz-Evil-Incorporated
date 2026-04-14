@@ -22,3 +22,9 @@ dist-ssr
 *.sw?
 .vite
 .env
+
+# amplify
+node_modules
+.amplify
+amplify_outputs*
+amplifyconfiguration*

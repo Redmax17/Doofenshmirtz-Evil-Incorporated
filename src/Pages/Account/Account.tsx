@@ -331,10 +331,34 @@ export default function Account() {
                   </Text>
                 </Stack>
 
-                {/* View Button */}
-                <Button variant={"outline"}>
-                  View
-                </Button>
+                {/* View Privacy Policy Dialog */}
+                <Dialog.Root size={"cover"} key={"xl"}>
+                  <Dialog.Trigger asChild>
+                    <Button variant={"outline"} backgroundColor={greenColor}>
+                      View
+                    </Button>
+                  </Dialog.Trigger>
+                  <Portal>
+                    <Dialog.Backdrop />
+                    <Dialog.Positioner>
+                      <Dialog.Content>
+                        <Dialog.Header>
+                          <Dialog.Title>
+                            Privacy Policy
+                          </Dialog.Title>
+                        </Dialog.Header>
+                        <Dialog.Body m={2}>
+                          <iframe src="../PrivacyPolicy.html" width={"100%"} height={"100%"} />
+                        </Dialog.Body>
+                        <Dialog.Footer>
+                          <Dialog.ActionTrigger asChild>
+                            <Button variant={"outline"}>Close</Button>
+                          </Dialog.ActionTrigger>
+                        </Dialog.Footer>
+                      </Dialog.Content>
+                    </Dialog.Positioner>
+                  </Portal>
+                </Dialog.Root>
               </HStack>
 
               {/* Unlink Accounts */}

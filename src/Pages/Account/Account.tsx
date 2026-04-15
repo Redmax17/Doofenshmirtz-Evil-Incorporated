@@ -34,7 +34,7 @@ import {
   Portal
 } from "@chakra-ui/react";
 import { generateClient } from "aws-amplify/api";
-import { getCurrentUser } from "aws-amplify/auth";
+import { deleteUser, getCurrentUser } from "aws-amplify/auth";
 import type { Schema } from "../../../amplify/data/resource";
 
 // Generates The Amplify Data Client 
@@ -62,6 +62,9 @@ export default function Account() {
   // *TO DO*
   // Use Plaid To Link Accounts And Store Them Here
   const [accounts, setAccounts] = useState();
+
+  // Tracks What The User Typed In The Delete Account Prompt
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   // Gets The User's Existing Settings From Amplify
   // Owner Auth Means Users Can Only See There Own Information
@@ -114,6 +117,29 @@ export default function Account() {
       console.log("Settings Saved Successfull");
     } catch (error) {
       console.error("Error Saving Settings:", error);
+    }
+  }
+
+  // Handles Account Deletion
+  async function handleAccountDelete() {
+    try {
+      // Deletes Users Current Records
+      const { data: settings } = await client.models.UserSettings.list();
+      for (const setting of settings) {
+        await client.models.UserSettings.delete({ id: setting.id });
+      }
+
+      // *ToDo*: Delete Bank Account Data
+
+      // Deletes The Users AWS Auth Account
+      await deleteUser();
+
+      // Redircts To Login Page
+      window.location.href = "/Login.html";
+
+      console.log("Account Deleted Successful");
+    } catch (error) {
+      console.log("An Error Occured While Trying To Delete This Account:", error);
     }
   }
 
@@ -366,10 +392,10 @@ export default function Account() {
                 {/* Delete Account Title And Subtitle */}
                 <Stack gap={1} mb={2} w="100%">
                   <Text fontSize="sm">
-                    View Privacy Policy
+                    Delete Account
                   </Text>
                   <Text fontSize="xs">
-                    View The Privacy Policy Of This App
+                    Permanently deletes your account and its data
                   </Text>
                 </Stack>
 
@@ -395,7 +421,7 @@ export default function Account() {
                               <Text>Type "Delete" To Confirm</Text>
                             </Center>
                             <Center>
-                              <Input type="text" background={"white"} w={"75%"}></Input>
+                              <Input type="text" background={"white"} w={"75%"} value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} />
                             </Center>
                           </Stack>
                         </Dialog.Body>
@@ -403,7 +429,7 @@ export default function Account() {
                           <Dialog.ActionTrigger asChild>
                             <Button variant={"outline"}>Cancel</Button>
                           </Dialog.ActionTrigger>
-                          <Button variant={"outline"} backgroundColor={greenColor}>Confirm</Button>
+                          <Button variant={"outline"} backgroundColor={greenColor} disabled={deleteConfirmText !== "Delete"} onClick={handleAccountDelete}>Confirm</Button>
                         </Dialog.Footer>
                       </Dialog.Content>
                     </Dialog.Positioner>

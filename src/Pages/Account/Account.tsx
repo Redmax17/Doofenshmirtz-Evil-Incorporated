@@ -34,7 +34,7 @@ import {
   Portal
 } from "@chakra-ui/react";
 import { generateClient } from "aws-amplify/api";
-import { deleteUser, fetchUserAttributes, getCurrentUser, updateUserAttribute, updateUserAttributes } from "aws-amplify/auth";
+import { deleteUser, fetchUserAttributes, getCurrentUser, updateUserAttribute, updateUserAttributes, updatePassword } from "aws-amplify/auth";
 import type { Schema } from "../../../amplify/data/resource";
 
 // Generates The Amplify Data Client 
@@ -57,6 +57,12 @@ export default function Account() {
   const [userEmailInput, setUserEmailInput] = useState(""); // Used To Check If The User Entered The Right Email
   const [newEmail, setNewEmail] = useState("");
 
+  // State For Password
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
   // State For Linked Accounts
   // *TO DO*
   // Use Plaid To Link Accounts And Store Them Here
@@ -65,7 +71,7 @@ export default function Account() {
   // Tracks What The User Typed In The Delete Account Prompt
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
-  // Gets The User's Email Fron Amplify
+  // Gets The User's Email From Amplify
   useEffect(() => {
     async function loadEmail() {
       try {
@@ -77,6 +83,47 @@ export default function Account() {
     }
     loadEmail();
   }, []);
+
+  // Saves The User's Password If They Change It
+  async function handlePasswordSave() {
+    try {
+      // Reset For Multiple Tries
+      setPasswordError("");
+
+      // Check If New Password Matches The Confirmation Password
+      if (newPassword !== confirmPassword) {
+        setPasswordError("Passwords must match");
+        return;
+      }
+
+      // Check Minium Length
+      if (newPassword.length > 8) {
+        setPasswordError("Password must be at least 8 characters long");
+        return;
+      }
+
+      await updatePassword({
+        oldPassword: currentPassword,
+        newPassword: newPassword
+      });
+
+      // Clear On Success
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      // Checks For Cognito Errors
+      if (error.name === "NotAuthorizedException") {
+        setPasswordError("Current Password Is Incorrect");
+      } else if (error.name === "InvalidPasswordException") {
+        setPasswordError("New Password Does Not Meet Requirements");
+      } else {
+        setPasswordError("Error Updating Password, Please Try Again");
+      }
+
+      console.error("Error Updating Password:", error);
+    }
+  }
 
   // *TODO*: Add Bank Accounts
   // Gets All Linked Bank Accounts
@@ -190,6 +237,74 @@ export default function Account() {
                             <Button variant={"outline"}>Cancel</Button>
                           </Dialog.ActionTrigger>
                           <Button variant={"outline"} backgroundColor={greenColor} onClick={handleEmailSave}>Save</Button>
+                        </Dialog.Footer>
+                      </Dialog.Content>
+                    </Dialog.Positioner>
+                  </Portal>
+                </Dialog.Root>
+              </HStack>
+
+              {/* Change Password */}
+              <HStack w="95%">
+                {/* Change Password Title And Subtitle */}
+                <Stack gap={1} mb={2} w="100%">
+                  <Text fontSize="sm">
+                    Change Password
+                  </Text>
+                  <Text fontSize="xs">
+                    Change the password used to log into your account
+                  </Text>
+                </Stack>
+
+                {/* Update Email Dailog */}
+                <Dialog.Root size={"sm"} key={"sm"}>
+                  <Dialog.Trigger asChild>
+                    <Button variant={"outline"} backgroundColor={greenColor}>
+                      Change
+                    </Button>
+                  </Dialog.Trigger>
+                  <Portal>
+                    <Dialog.Backdrop />
+                    <Dialog.Positioner>
+                      <Dialog.Content>
+                        <Dialog.Header>
+                          <Dialog.Title>
+                            Change Password
+                          </Dialog.Title>
+                        </Dialog.Header>
+                        <Dialog.Body m={2}>
+                          <Stack>
+                            <Text>Enter Old Password</Text>
+                            <Input
+                              type="text"
+                              backgroundColor={"white"}
+                              w={"75%"}
+                              value={currentPassword}
+                              onChange={e => setCurrentPassword(e.target.value)}
+                            />
+                            <Text>Enter Your New Password</Text>
+                            <Input type="text" backgroundColor={"white"} w={"75%"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                            <Text>Confirm The New Password</Text>
+                            <Input
+                              type="text"
+                              backgroundColor={"white"}
+                              w={"75%"}
+                              value={newPassword}
+                              onChange={e => setNewPassword(e.target.value)}
+                              disabled={confirmPassword !== currentPassword}
+                            />
+
+                            {/*Error Message */}
+                            {passwordError && (
+                              <Text fontSize={"sm"} color={"red"}>{passwordError}</Text>
+                            )}
+                          </Stack>
+                        </Dialog.Body>
+                        <Dialog.Footer>
+                          <Dialog.ActionTrigger asChild>
+                            <Button variant={"outline"}>Cancel</Button>
+                          </Dialog.ActionTrigger>
+                          <Button variant={"outline"} backgroundColor={greenColor} onClick={handlePasswordSave}>Save</Button>
                         </Dialog.Footer>
                       </Dialog.Content>
                     </Dialog.Positioner>

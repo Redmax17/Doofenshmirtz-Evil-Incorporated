@@ -34,7 +34,7 @@ import {
   Portal
 } from "@chakra-ui/react";
 import { generateClient } from "aws-amplify/api";
-import { deleteUser, getCurrentUser } from "aws-amplify/auth";
+import { deleteUser, fetchUserAttributes, getCurrentUser, updateUserAttribute, updateUserAttributes } from "aws-amplify/auth";
 import type { Schema } from "../../../amplify/data/resource";
 
 // Generates The Amplify Data Client 
@@ -52,6 +52,11 @@ export default function Account() {
 
   const [settingsId, setSettingsId] = useState<string | null>(null);
 
+  // State For Email
+  const [userEmail, setUserEmail] = useState("");
+  const [userEmailInput, setUserEmailInput] = useState(""); // Used To Check If The User Entered The Right Email
+  const [newEmail, setNewEmail] = useState("");
+
   // State For Notifications
   const [overspending, setOverspending] = useState(false);
   const [lowBalance, setLowBalance] = useState(false);
@@ -65,6 +70,19 @@ export default function Account() {
 
   // Tracks What The User Typed In The Delete Account Prompt
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+
+  // Gets The User's Email Fron Amplify
+  useEffect(() => {
+    async function loadEmail() {
+      try {
+        const attributes = await fetchUserAttributes();
+        setUserEmail(attributes.email ?? "");
+      } catch (error) {
+        console.error("Error Fetching User Email:", error);
+      }
+    }
+    loadEmail();
+  }, []);
 
   // Gets The User's Existing Settings From Amplify
   // Owner Auth Means Users Can Only See There Own Information
@@ -139,7 +157,22 @@ export default function Account() {
 
       console.log("Account Deleted Successful");
     } catch (error) {
-      console.log("An Error Occured While Trying To Delete This Account:", error);
+      console.error("An Error Occured While Trying To Delete This Account:", error);
+    }
+  }
+
+  // Saves New User Email When The User Changes It
+  async function handleEmailSave() {
+    try {
+      await updateUserAttributes({
+        userAttributes: {
+          email: newEmail,
+        },
+      });
+
+      console.log("Email Saved Successfull")
+    } catch (error) {
+      console.error("An Error Occured While Trying To Save The New Email:", error)
     }
   }
 
@@ -161,6 +194,75 @@ export default function Account() {
 
           {/* Page Content */}
           <Stack gap={6}>
+            {/* Personal Information */}
+            <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="18px" p={5}>
+              {/* Card Header */}
+              <Text fontSize="m" fontWeight={900} color={greenColor}>
+                Personal Information
+              </Text>
+
+              <Box h="1px" w="100%" bg="blackAlpha.100" my={2} />
+
+              {/* Card Content */}
+
+              {/* Update Email */}
+              <HStack w="95%">
+                {/* Update Email Title And Subtitle */}
+                <Stack gap={1} mb={2} w="100%">
+                  <Text fontSize="sm">
+                    Update Email
+                  </Text>
+                  <Text fontSize="xs">
+                    Update your accounts email address
+                  </Text>
+                </Stack>
+
+                {/* Update Email Dailog */}
+                <Dialog.Root size={"sm"} key={"sm"}>
+                  <Dialog.Trigger asChild>
+                    <Button variant={"outline"} backgroundColor={greenColor}>
+                      Update
+                    </Button>
+                  </Dialog.Trigger>
+                  <Portal>
+                    <Dialog.Backdrop />
+                    <Dialog.Positioner>
+                      <Dialog.Content>
+                        <Dialog.Header>
+                          <Dialog.Title>
+                            Update Email
+                          </Dialog.Title>
+                        </Dialog.Header>
+                        <Dialog.Body m={2}>
+                          <Stack>
+                            <Text>Enter Your Old Email</Text>
+                            <Input type="text" backgroundColor={"white"} w={"75%"} value={userEmailInput} onChange={e => setUserEmailInput(e.target.value)} />
+                            <Text>Enter The New Email</Text>
+                            <Input
+                              type="text"
+                              backgroundColor={"white"}
+                              w={"75%"}
+                              value={newEmail}
+                              onChange={e => setNewEmail(e.target.value)}
+                              disabled={userEmailInput !== userEmail}
+                            />
+                          </Stack>
+                        </Dialog.Body>
+                        <Dialog.Footer>
+                          <Dialog.ActionTrigger asChild>
+                            <Button variant={"outline"}>Cancel</Button>
+                          </Dialog.ActionTrigger>
+                          <Button variant={"outline"} backgroundColor={greenColor} onClick={handleEmailSave}>Save</Button>
+                        </Dialog.Footer>
+                      </Dialog.Content>
+                    </Dialog.Positioner>
+                  </Portal>
+                </Dialog.Root>
+              </HStack>
+            </Box>
+
+
+
             {/* Notification Settings */}
             <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="18px" p={5}>
               {/* Card Header */}

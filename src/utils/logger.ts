@@ -67,5 +67,5 @@ export const logger = {
         }
     },
 
-    clearLogs: () => localStorage.removeItem(LOG_KEY);
+    clearLogs: () => localStorage.removeItem(LOG_KEY),
 }

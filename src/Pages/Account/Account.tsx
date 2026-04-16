@@ -57,12 +57,6 @@ export default function Account() {
   const [userEmailInput, setUserEmailInput] = useState(""); // Used To Check If The User Entered The Right Email
   const [newEmail, setNewEmail] = useState("");
 
-  // State For Notifications
-  const [overspending, setOverspending] = useState(false);
-  const [lowBalance, setLowBalance] = useState(false);
-  const [largeTransaction, setLargeTransaction] = useState(false);
-  const [lowBalanceThreshold, setLowBalanceThreshold] = useState(50);
-
   // State For Linked Accounts
   // *TO DO*
   // Use Plaid To Link Accounts And Store Them Here
@@ -84,68 +78,12 @@ export default function Account() {
     loadEmail();
   }, []);
 
-  // Gets The User's Existing Settings From Amplify
-  // Owner Auth Means Users Can Only See There Own Information
-  useEffect(() => {
-    async function loadSettings() {
-      try {
-        const { data } = await client.models.UserSettings.list();
-
-        if (data.length > 0) {
-          // Users Should Only Have 1 Record So We Pick The Top Everytime
-          const s = data[0];
-          setSettingsId(s.id);
-
-          setOverspending(s.overSpendingNotification ?? false);
-          setLowBalance(s.lowBalanceNotification ?? false);
-          setLargeTransaction(s.largeTransactionNotification ?? false);
-          setLowBalanceThreshold(s.lowBalanceThreshold ?? 50);
-        }
-      } catch (error) {
-        console.error("Error Loading Settings Data:", error);
-      }
-    }
-    loadSettings();
-  }, [])
-
   // *TODO*: Add Bank Accounts
   // Gets All Linked Bank Accounts
-
-  // Creates A New Save If One Does Not Exist
-  // Or Updates The Existing One
-  async function handleSave() {
-    try {
-      const payload = {
-        overspending,
-        lowBalance,
-        largeTransaction,
-        lowBalanceThreshold
-      };
-
-      // Checks If Record Exists
-      if (settingsId) {
-        // If The Record Exists We Save To It
-        await client.models.UserSettings.update({ id: settingsId, ...payload });
-      } else {
-        // If There Is No Record We Create A New One And Store It
-        const { data } = await client.models.UserSettings.create(payload);
-        setSettingsId(data?.id ?? null);
-      }
-
-      console.log("Settings Saved Successfull");
-    } catch (error) {
-      console.error("Error Saving Settings:", error);
-    }
-  }
 
   // Handles Account Deletion
   async function handleAccountDelete() {
     try {
-      // Deletes Users Current Records
-      const { data: settings } = await client.models.UserSettings.list();
-      for (const setting of settings) {
-        await client.models.UserSettings.delete({ id: setting.id });
-      }
 
       // *ToDo*: Delete Bank Account Data
 
@@ -186,7 +124,6 @@ export default function Account() {
               <Heading size="lg" color={strongText}>
                 Account Settings
               </Heading>
-              <Button onClick={() => handleSave()} backgroundColor={greenColor}>Save</Button>
             </HStack>
           </Stack>
 
@@ -258,115 +195,6 @@ export default function Account() {
                     </Dialog.Positioner>
                   </Portal>
                 </Dialog.Root>
-              </HStack>
-            </Box>
-
-
-
-            {/* Notification Settings */}
-            <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="18px" p={5}>
-              {/* Card Header */}
-              <Text fontSize="m" fontWeight={900} color={greenColor}>
-                Notifications
-              </Text>
-
-              <Box h="1px" w="100%" bg="blackAlpha.100" my={2} />
-
-              {/* Card Content */}
-
-              {/* Overspending Alert */}
-              <HStack w="95%">
-                {/* Overspending Alert Title And Subtitle */}
-                <Stack gap={1} mb={2} w="100%">
-                  <Text fontSize="sm">
-                    Overspending Alert
-                  </Text>
-                  <Text fontSize="xs">
-                    Alert me when I go above my set budget
-                  </Text>
-                </Stack>
-
-                {/* Overspending Toggle Switch */}
-                <Switch.Root
-                  colorPalette={"green"}
-                  checked={overspending}
-                  onCheckedChange={e => setOverspending(e.checked)}>
-                  <Switch.HiddenInput />
-                  <Switch.Control >
-                    <Switch.Thumb />
-                  </Switch.Control>
-                  <Switch.Label />
-                </Switch.Root>
-              </HStack>
-
-              {/* Low Balance Alert */}
-              <HStack w="95%">
-                {/* Low Balance Alert Title And Subtitle */}
-                <Stack gap={1} mb={2} w="100%">
-                  <Text fontSize="sm">
-                    Low Balance Alert
-                  </Text>
-                  <Text fontSize="xs">
-                    Alert me when I have a low balance
-                  </Text>
-                </Stack>
-
-                {/* Low Balance Alert Toggle Switch */}
-                <Switch.Root
-                  colorPalette={"green"}
-                  checked={lowBalance}
-                  onCheckedChange={e => setLowBalance(e.checked)}>
-                  <Switch.HiddenInput />
-                  <Switch.Control>
-                    <Switch.Thumb />
-                  </Switch.Control>
-                  <Switch.Label />
-                </Switch.Root>
-              </HStack>
-
-              {/* Large Transaction Alert */}
-              <HStack w="95%">
-                {/* Large Transaction Alert Title And Subtitle */}
-                <Stack gap={1} mb={2} w="100%">
-                  <Text fontSize="sm">
-                    Large Transaction Alert
-                  </Text>
-                  <Text fontSize="xs">
-                    Alert me when there is a large transaction
-                  </Text>
-                </Stack>
-
-                {/* Large Transaction Alert Toggle Switch */}
-                <Switch.Root
-                  colorPalette={"green"}
-                  checked={largeTransaction}
-                  onCheckedChange={e => setLargeTransaction(e.checked)}>
-                  <Switch.HiddenInput />
-                  <Switch.Control>
-                    <Switch.Thumb />
-                  </Switch.Control>
-                  <Switch.Label />
-                </Switch.Root>
-              </HStack>
-
-              <Box h="1px" w="100%" bg="blackAlpha.100" my={1}></Box>
-
-              {/* Low Balance Threshold */}
-              <HStack w="95%">
-                {/* Low Balance Threshold Title And Subtitle */}
-                <Stack gap={1} mb={2} w="100%">
-                  <Text fontSize="sm">
-                    Low Balance Threshold
-                  </Text>
-                  <Text fontSize="xs">
-                    What amount should we notify you at?
-                  </Text>
-                </Stack>
-
-                {/* Low Balance Threshold Input */}
-                <InputGroup startElement="$" w="25%" >
-                  <Input type="number" defaultValue={lowBalanceThreshold} background={"white"} onChange={e => setLowBalanceThreshold(Number(e.target.value))}></Input>
-                </InputGroup>
               </HStack>
             </Box>
 

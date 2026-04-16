@@ -7,13 +7,10 @@ import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
 // Defines The Database Schema
 // Id Is Made Automaticly, So We Do Not Need To Define It 
 const schema = a.schema({
-  // Defines Table For Storing User Settings
-  UserSettings: a
+  // Defines Table 
+  Empty: a
     .model({
-      overSpendingNotification: a.boolean(),
-      lowBalanceNotification: a.boolean(),
-      largeTransactionNotification: a.boolean(),
-      lowBalanceThreshold: a.integer()
+      empty: a.string(),
     })
     // allow.owner Means That Users Can Changes These Values
     .authorization((allow) => [allow.owner()]),

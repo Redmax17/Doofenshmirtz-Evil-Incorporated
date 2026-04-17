@@ -1,21 +1,20 @@
-// How the Account Settings page is initalized from Account.html
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "../../Styles/Dashboard.css";
-import Account from "./Account";
-import { system } from "../../Styles/theme";
 import { ChakraProvider } from "@chakra-ui/react";
+import { system } from "../../Styles/theme";
+import "../../Styles/index.css";
+import Account from "./Account";
 
-const rootElement = document.getElementById("root");
+const rootElementValue = document.getElementById("root");
 
-if (!rootElement) {
+if (!rootElementValue) {
   throw new Error("Root element (#root) not found. Check your HTML file.");
 }
 
-ReactDOM.createRoot(rootElement).render(
+ReactDOM.createRoot(rootElementValue).render(
   <React.StrictMode>
     <ChakraProvider value={system}>
       <Account />
     </ChakraProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

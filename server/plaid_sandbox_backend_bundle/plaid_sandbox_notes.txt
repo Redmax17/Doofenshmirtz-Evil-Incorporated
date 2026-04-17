@@ -1,0 +1,19 @@
+Plaid sandbox implementation bundle
+
+Contents:
+- server.js
+- package.json
+- plaid_env_additions.txt
+
+Basic setup:
+1. Replace your current server.js with the bundled server.js
+2. Merge or replace package.json with the bundled package.json
+3. Add the variables from plaid_env_additions.txt to your .env
+4. Run npm install
+5. Start the backend
+6. Use Plaid Link in the frontend
+
+Sandbox credentials commonly used in Link:
+- username: user_good
+- password: pass_good
+- if prompted for MFA code: 1234

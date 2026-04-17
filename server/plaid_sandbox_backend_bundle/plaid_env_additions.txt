@@ -1,0 +1,8 @@
+# Plaid Sandbox
+PLAID_ENV=sandbox
+PLAID_CLIENT_ID=your_plaid_client_id
+PLAID_SECRET=your_plaid_sandbox_secret
+PLAID_CLIENT_NAME=Income Generator-Inator
+# Optional for OAuth institutions / webhooks
+# PLAID_REDIRECT_URI=http://localhost:5173/
+# PLAID_WEBHOOK_URL=https://your-public-server.example.com/api/v1/plaid/webhook

@@ -158,3 +158,66 @@ export type BudgetHistoryResponse = {
   budgetId: number;
   points: BudgetHistoryPoint[];
 };
+
+//plaid types
+
+export type PlaidLinkTokenResponse = {
+  linkToken: string;
+  expiration?: string;
+};
+
+export type PlaidExchangeResponse = {
+  success: boolean;
+  itemId?: string;
+  institutionName?: string;
+  accountsLinked?: number;
+  message?: string;
+};
+
+export type PlaidLinkedAccountRow = {
+  accountId: number;
+  plaidAccountId?: string;
+  name: string;
+  mask?: string | null;
+  type?: string | null;
+  subtype?: string | null;
+  balance?: number;
+  institutionName?: string | null;
+};
+
+export type PlaidLinkedAccountsResponse = {
+  items: Array<{
+    itemId: string;
+    institutionName?: string | null;
+    accounts: PlaidLinkedAccountRow[];
+  }>;
+};
+
+// ------------------------------
+// Auth + Account Page Types
+// ------------------------------
+
+export type AuthUser = {
+  userId: number;
+  email: string;
+};
+
+export type AuthLoginResponse = {
+  token: string;
+  user: AuthUser;
+};
+
+export type AuthMeResponse = {
+  user: AuthUser;
+};
+
+export type PlaidInstitutionItem = {
+  itemId: string;
+  institutionId: string | null;
+  institutionName: string | null;
+  createdAt: string;
+};
+
+export type PlaidItemsResponse = {
+  items: PlaidInstitutionItem[];
+};

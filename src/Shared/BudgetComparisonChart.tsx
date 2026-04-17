@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable no-unsafe-finally */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from "react";
 import { Bar } from "react-chartjs-2";
 import {

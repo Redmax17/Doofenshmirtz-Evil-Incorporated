@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /*
   This is the dashboard page the imports that are non standard include:
   Spending pie Chart: A React Component that displays a pie chart of spending by category.
@@ -18,6 +20,7 @@ import SpendingLineChart from "../../Shared/SpendingLineChart";
 import AccountsToggle from "../../Shared/AccountsToggle";
 import NetWorthCard from "../../Shared/NetWorthCard";
 import BudgetComparisonChart from "../../Shared/BudgetComparisonChart";
+import PlaidLinkButton from "../../Shared/PlaidLinkButton";
 import {
   Badge,
   Box,
@@ -171,6 +174,8 @@ export default function Dashboard() {
               </Heading>
 
               <HStack gap={3} flexWrap="wrap" justify="flex-end">
+                <PlaidLinkButton onLinkedValue={loadDashboardData} />
+                
                 <AccountsToggle
                   selectedAccountIdValue={accountIdValue}
                   onChangeAccountIdValue={setAccountIdValue}

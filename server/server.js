@@ -8,11 +8,380 @@ import { runQuery } from "./db.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { requireAuth } from "./authMiddleware.js";
-
+import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } from "plaid";
+import crypto from "crypto";
 dotenv.config();
+
+const plaidConfigValue = new Configuration({
+  basePath:
+    process.env.PLAID_ENV === "production"
+      ? PlaidEnvironments.production
+      : process.env.PLAID_ENV === "development"
+      ? PlaidEnvironments.development
+      : PlaidEnvironments.sandbox,
+  baseOptions: {
+    headers: {
+      "PLAID-CLIENT-ID": process.env.PLAID_CLIENT_ID,
+      "PLAID-SECRET": process.env.PLAID_SECRET,
+    },
+  },
+});
+
 
 const app = express();
 const portValue = Number(process.env.PORT || 5000);
+const singleRowLimitValue = 1;
+
+const plaidEnvironmentKeyValue = String(process.env.PLAID_ENV || "sandbox").trim().toLowerCase();
+const plaidBasePathValue =
+  plaidEnvironmentKeyValue === "production"
+    ? PlaidEnvironments.production
+    : plaidEnvironmentKeyValue === "development"
+      ? PlaidEnvironments.development
+      : PlaidEnvironments.sandbox;
+
+const plaidClientIdValue = String(process.env.PLAID_CLIENT_ID || "").trim();
+const plaidSecretValue = String(process.env.PLAID_SECRET || "").trim();
+
+const plaidClientValue =
+  plaidClientIdValue && plaidSecretValue
+    ? new PlaidApi(
+        new Configuration({
+          basePath: plaidBasePathValue,
+          baseOptions: {
+            headers: {
+              "PLAID-CLIENT-ID": plaidClientIdValue,
+              "PLAID-SECRET": plaidSecretValue,
+            },
+          },
+        }),
+      )
+    : null;
+
+function encryptTokenValue(tokenValue) {
+  const keyHexValue = String(process.env.PLAID_TOKEN_KEY || "").trim();
+  if (!keyHexValue) {
+    throw new Error("Missing PLAID_TOKEN_KEY");
+  }
+
+  const keyBufferValue = Buffer.from(keyHexValue, "hex");
+  const ivBufferValue = crypto.randomBytes(16);
+  const cipherValue = crypto.createCipheriv("aes-256-cbc", keyBufferValue, ivBufferValue);
+
+  const encryptedBufferValue = Buffer.concat([
+    cipherValue.update(String(tokenValue), "utf8"),
+    cipherValue.final(),
+  ]);
+
+  return Buffer.concat([ivBufferValue, encryptedBufferValue]);
+}
+
+function decryptTokenValue(cipherBufferValue) {
+  const keyHexValue = String(process.env.PLAID_TOKEN_KEY || "").trim();
+  if (!keyHexValue) {
+    throw new Error("Missing PLAID_TOKEN_KEY");
+  }
+
+  const keyBufferValue = Buffer.from(keyHexValue, "hex");
+  const rawBufferValue = Buffer.isBuffer(cipherBufferValue)
+    ? cipherBufferValue
+    : Buffer.from(cipherBufferValue);
+
+  const ivBufferValue = rawBufferValue.subarray(0, 16);
+  const encryptedBufferValue = rawBufferValue.subarray(16);
+
+  const decipherValue = crypto.createDecipheriv("aes-256-cbc", keyBufferValue, ivBufferValue);
+
+  return Buffer.concat([
+    decipherValue.update(encryptedBufferValue),
+    decipherValue.final(),
+  ]).toString("utf8");
+}
+
+function getPlaidClientOrThrowValue() {
+  if (!plaidClientValue) {
+    throw new Error(
+      "Plaid is not configured. Set PLAID_CLIENT_ID, PLAID_SECRET, and PLAID_ENV in your server .env file.",
+    );
+  }
+  return plaidClientValue;
+}
+
+function getPlaidWebhookUrlValue() {
+  const webhookValue = String(process.env.PLAID_WEBHOOK_URL || "").trim();
+  return webhookValue || null;
+}
+
+function getPlaidRedirectUriValue() {
+  const redirectUriValue = String(process.env.PLAID_REDIRECT_URI || "").trim();
+  return redirectUriValue || null;
+}
+
+function toMysqlDateTimeStringValue(rawDateValue) {
+  if (!rawDateValue) return null;
+
+  if (typeof rawDateValue === "string") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(rawDateValue)) {
+      return `${rawDateValue} 00:00:00`;
+    }
+    return rawDateValue.replace("T", " ").replace("Z", "");
+  }
+
+  const dateValue = rawDateValue instanceof Date ? rawDateValue : new Date(rawDateValue);
+  if (Number.isNaN(dateValue.getTime())) return null;
+
+  const padValue = (n) => String(n).padStart(2, "0");
+
+  return (
+    `${dateValue.getFullYear()}-${padValue(dateValue.getMonth() + 1)}-${padValue(dateValue.getDate())} ` +
+    `${padValue(dateValue.getHours())}:${padValue(dateValue.getMinutes())}:${padValue(dateValue.getSeconds())}`
+  );
+}
+
+async function syncPlaidAccountsForItemValue({
+  userIdValue,
+  localItemIdValue,
+  accessTokenValue,
+}) {
+  const plaidClientInstanceValue = getPlaidClientOrThrowValue();
+
+  const accountsResponseValue = await plaidClientInstanceValue.accountsGet({
+    access_token: accessTokenValue,
+  });
+
+  const accountsValue = Array.isArray(accountsResponseValue?.data?.accounts)
+    ? accountsResponseValue.data.accounts
+    : [];
+
+  const upsertSqlValue = `
+    INSERT INTO plaid_accounts (
+      user_id,
+      item_id,
+      plaid_account_id,
+      official_name,
+      name,
+      mask,
+      type,
+      subtype,
+      account_balance,
+      created_at,
+      updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    ON DUPLICATE KEY UPDATE
+      official_name = VALUES(official_name),
+      name = VALUES(name),
+      mask = VALUES(mask),
+      type = VALUES(type),
+      subtype = VALUES(subtype),
+      account_balance = VALUES(account_balance),
+      updated_at = NOW();
+  `;
+
+  for (const accountValue of accountsValue) {
+    const balanceValue =
+      accountValue?.balances?.current ?? accountValue?.balances?.available ?? 0;
+
+    await runQuery(upsertSqlValue, [
+      userIdValue,
+      localItemIdValue,
+      String(accountValue.account_id),
+      accountValue.official_name ?? null,
+      accountValue.name ?? null,
+      accountValue.mask ?? null,
+      accountValue.type ?? null,
+      accountValue.subtype ?? null,
+      Number(balanceValue ?? 0),
+    ]);
+  }
+
+  return { accountsSyncedValue: accountsValue.length };
+}
+
+async function syncPlaidTransactionsForItemValue({
+  userIdValue,
+  localItemIdValue,
+  plaidItemIdValue,
+  accessTokenValue,
+  cursorValue,
+}) {
+  const plaidClientInstanceValue = getPlaidClientOrThrowValue();
+
+  let nextCursorValue = cursorValue || null;
+  let hasMoreValue = true;
+  let addedCountValue = 0;
+  let modifiedCountValue = 0;
+  let removedCountValue = 0;
+
+  const insertTransactionSqlValue = `
+    INSERT INTO plaid_transactions (
+      user_id,
+      item_id,
+      account_id,
+      plaid_transaction_id,
+      amount,
+      datetime_posted,
+      merchant_name,
+      name_legacy,
+      pending,
+      created_at,
+      updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    ON DUPLICATE KEY UPDATE
+      account_id = VALUES(account_id),
+      amount = VALUES(amount),
+      datetime_posted = VALUES(datetime_posted),
+      merchant_name = VALUES(merchant_name),
+      name_legacy = VALUES(name_legacy),
+      pending = VALUES(pending),
+      updated_at = NOW();
+  `;
+
+  const insertPfcSqlValue = `
+    INSERT INTO plaid_transaction_pfc (
+      transaction_id,
+      primary_category
+    )
+    VALUES (?, ?)
+    ON DUPLICATE KEY UPDATE
+      primary_category = VALUES(primary_category);
+  `;
+
+  while (hasMoreValue) {
+    const syncResponseValue = await plaidClientInstanceValue.transactionsSync({
+      access_token_cipher: accessTokenValue,
+      cursor: nextCursorValue || undefined,
+    });
+
+    const addedTransactionsValue = Array.isArray(syncResponseValue?.data?.added)
+      ? syncResponseValue.data.added
+      : [];
+    const modifiedTransactionsValue = Array.isArray(syncResponseValue?.data?.modified)
+      ? syncResponseValue.data.modified
+      : [];
+    const removedTransactionsValue = Array.isArray(syncResponseValue?.data?.removed)
+      ? syncResponseValue.data.removed
+      : [];
+
+    const transactionsToUpsertValue = [
+      ...addedTransactionsValue,
+      ...modifiedTransactionsValue,
+    ];
+
+    for (const transactionValue of transactionsToUpsertValue) {
+      const accountRowsValue = await runQuery(
+        `
+        SELECT id
+        FROM plaid_accounts
+        WHERE user_id = ? AND plaid_account_id = ?
+        LIMIT 1;
+        `,
+        [userIdValue, String(transactionValue.account_id)],
+      );
+
+      if (!accountRowsValue.length) {
+        continue;
+      }
+
+      const localAccountIdValue = Number(accountRowsValue[0].id);
+      const datetimePostedValue =
+        toMysqlDateTimeStringValue(transactionValue.datetime) ||
+        toMysqlDateTimeStringValue(transactionValue.authorized_datetime) ||
+        toMysqlDateTimeStringValue(transactionValue.date) ||
+        toMysqlDateTimeStringValue(transactionValue.authorized_date) ||
+        toMysqlDateTimeStringValue(new Date());
+
+      await runQuery(insertTransactionSqlValue, [
+        userIdValue,
+        localItemIdValue,
+        localAccountIdValue,
+        String(transactionValue.transaction_id),
+        Number(transactionValue.amount ?? 0),
+        datetimePostedValue,
+        transactionValue.merchant_name ?? null,
+        transactionValue.name ?? null,
+        Number(Boolean(transactionValue.pending)),
+      ]);
+
+      const localTransactionRowsValue = await runQuery(
+        `
+        SELECT id
+        FROM plaid_transactions
+        WHERE user_id = ? AND plaid_transaction_id = ?
+        LIMIT 1;
+        `,
+        [userIdValue, String(transactionValue.transaction_id)],
+      );
+
+      const localTransactionIdValue = Number(localTransactionRowsValue?.[0]?.id ?? 0);
+      const primaryCategoryValue =
+        transactionValue.personal_finance_category?.primary ?? "UNCATEGORIZED";
+
+      if (localTransactionIdValue > 0) {
+        await runQuery(insertPfcSqlValue, [
+          localTransactionIdValue,
+          normalizePrimaryCategoryKey(primaryCategoryValue),
+        ]);
+      }
+    }
+
+    for (const removedTransactionValue of removedTransactionsValue) {
+      const localTransactionRowsValue = await runQuery(
+        `
+        SELECT id
+        FROM plaid_transactions
+        WHERE user_id = ? AND plaid_transaction_id = ?
+        LIMIT 1;
+        `,
+        [userIdValue, String(removedTransactionValue.transaction_id)],
+      );
+
+      const localTransactionIdValue = Number(localTransactionRowsValue?.[0]?.id ?? 0);
+
+      if (localTransactionIdValue > 0) {
+        await runQuery(
+          `
+          DELETE FROM plaid_transaction_pfc
+          WHERE transaction_id = ?;
+          `,
+          [localTransactionIdValue],
+        );
+      }
+
+      await runQuery(
+        `
+        DELETE FROM plaid_transactions
+        WHERE user_id = ? AND plaid_transaction_id = ?;
+        `,
+        [userIdValue, String(removedTransactionValue.transaction_id)],
+      );
+    }
+
+    nextCursorValue = syncResponseValue?.data?.next_cursor ?? nextCursorValue;
+    hasMoreValue = Boolean(syncResponseValue?.data?.has_more);
+
+    addedCountValue += addedTransactionsValue.length;
+    modifiedCountValue += modifiedTransactionsValue.length;
+    removedCountValue += removedTransactionsValue.length;
+  }
+
+  await runQuery(
+    `
+    UPDATE plaid_items
+    SET transactions_cursor = ?, updated_at = NOW()
+    WHERE user_id = ? AND plaid_item_id = ?;
+    `,
+    [nextCursorValue, userIdValue, plaidItemIdValue],
+  );
+
+  return {
+    transactionsAddedValue: addedCountValue,
+    transactionsModifiedValue: modifiedCountValue,
+    transactionsRemovedValue: removedCountValue,
+    nextCursorValue,
+  };
+}
 
 app.use(express.json());
 app.use(
@@ -21,6 +390,15 @@ app.use(
     credentials: true,
   })
 );
+
+app.get("/api/health", async (req, res) => {
+  return res.json({
+    ok: true,
+    service: "dei-dev-api",
+    environment: process.env.NODE_ENV || "development",
+    timestamp: new Date().toISOString(),
+  });
+});
 
 //Route Functions:
 /**
@@ -231,7 +609,7 @@ app.post("/api/auth/register", async (req, res) => {
     }
 
     const existingRows = await runQuery(
-      `SELECT user_id FROM users WHERE email = ? LIMIT ${limitValue}`,
+      `SELECT user_id FROM users WHERE email = ? LIMIT ${singleRowLimitValue}`,
       [emailValue]
     );
 
@@ -272,7 +650,7 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     const rowsValue = await runQuery(
-      `SELECT user_id, email, password_hash FROM users WHERE email = ? LIMIT ${limitValue}`,
+      `SELECT user_id, email, password_hash FROM users WHERE email = ? LIMIT ${singleRowLimitValue}`,
       [emailValue]
     );
 
@@ -303,7 +681,57 @@ app.post("/api/auth/login", async (req, res) => {
 });
   
 app.get("/api/auth/me", requireAuth, async (req, res) => {
-  return res.json({ user: req.user });
+  try {
+    const userIdValue = Number(req.user?.userId ?? 0);
+
+    const rowsValue = await runQuery(
+      `
+      SELECT
+        user_id AS userId,
+        email,
+        created_at AS createdAt,
+        updated_at AS updatedAt
+      FROM users
+      WHERE user_id = ?
+      LIMIT ${singleRowLimitValue};
+      `,
+      [userIdValue],
+    );
+
+    if (!rowsValue.length) {
+      return res.json({ user: req.user });
+    }
+
+    const userRowValue = rowsValue[0];
+
+    return res.json({
+      user: {
+        userId: Number(userRowValue.userId),
+        email: String(userRowValue.email ?? req.user.email ?? ""),
+        createdAt:
+          userRowValue.createdAt instanceof Date
+            ? userRowValue.createdAt.toISOString()
+            : String(userRowValue.createdAt ?? ""),
+        updatedAt:
+          userRowValue.updatedAt instanceof Date
+            ? userRowValue.updatedAt.toISOString()
+            : String(userRowValue.updatedAt ?? ""),
+      },
+    });
+  } catch (errValue) {
+    return res.status(500).json({ error: String(errValue) });
+  }
+});
+
+app.post("/api/auth/logout", requireAuth, async (req, res) => {
+  try {
+    // Token-based logout is handled client-side right now.
+    // This route exists so the new auth pages have a stable backend path
+    // if you later move to cookies, refresh-token revocation, or session storage.
+    return res.json({ ok: true });
+  } catch (errValue) {
+    return res.status(500).json({ error: String(errValue) });
+  }
 });
 
 //Dashboard Page Routes:
@@ -328,7 +756,7 @@ app.get("/api/v1/dashboard/summary", requireAuth, async (req, res) => {
       WHERE t.user_id = ?
         AND t.pending = 0
         AND ${whereRangeValue}
-        ${accountFilterSqlValue};;
+        ${accountFilterSqlValue};
     `;
 
 
@@ -343,6 +771,8 @@ app.get("/api/v1/dashboard/summary", requireAuth, async (req, res) => {
       incomeTotal,
       spendingTotal,
       netTotal: incomeTotal - spendingTotal,
+      accountIdFilterApplied: hasAccountFilterValue,
+      selectedAccountId: accountIdValue,
       dataAsOf: new Date().toLocaleString(),
     });
   } catch (errValue) {
@@ -407,6 +837,64 @@ app.get("/api/v1/dashboard/recent-transactions", requireAuth, async (req, res) =
  * GET /api/v1/dashboard/spending-by-category?timeFrame=...
  * Returns: [{ category: "Food", total: 123.45 }]
  */
+
+/**
+ * GET /api/v1/transactions?limit=100&timeFrame=...&accountId=...
+ * Dedicated transactions page endpoint.
+ * Keeps the existing dashboard route intact while exposing the same dataset
+ * through a page-specific path for future front-end cleanup.
+ */
+app.get("/api/v1/transactions", requireAuth, async (req, res) => {
+  try {
+    const { accountFilterSqlValue } = resolveAccountFilter(req, "t");
+    const timeFrameValue = resolveTimeFrameKey(req);
+    const whereRangeValue = getTimeFrameWhereClause(timeFrameValue);
+
+    const limitRawValue = Number(req.query.limit ?? 100);
+    const limitValue = Number.isFinite(limitRawValue)
+      ? Math.max(1, Math.min(500, Math.floor(limitRawValue)))
+      : 100;
+
+    const sqlValue = `
+      SELECT
+        t.id AS transactionId,
+        DATE(t.datetime_posted) AS date,
+        COALESCE(t.merchant_name, t.name_legacy) AS name,
+        COALESCE(pfc.primary_category, 'Uncategorized') AS category,
+        t.amount AS amount
+      FROM plaid_transactions t
+      JOIN plaid_accounts a ON t.account_id = a.id
+      JOIN plaid_items i ON a.item_id = i.id
+      LEFT JOIN plaid_transaction_pfc pfc
+        ON pfc.transaction_id = t.id
+      WHERE t.pending = 0
+        AND ${whereRangeValue}
+        AND t.user_id = ?
+        ${accountFilterSqlValue}
+      ORDER BY t.datetime_posted DESC
+      LIMIT ${limitValue};
+    `;
+
+    const userIdValue = req.user.userId;
+    const rowsValue = await runQuery(sqlValue, [userIdValue]);
+
+    return res.json(
+      rowsValue.map((rowValue) => ({
+        transactionId: String(rowValue.transactionId),
+        date:
+          rowValue.date instanceof Date
+            ? rowValue.date.toISOString().split("T")[0]
+            : String(rowValue.date),
+        name: String(rowValue.name ?? ""),
+        category: String(rowValue.category ?? "Uncategorized"),
+        amount: Number(rowValue.amount),
+      })),
+    );
+  } catch (errValue) {
+    return res.status(500).json({ error: String(errValue) });
+  }
+});
+
 app.get("/api/v1/dashboard/spending-by-category", requireAuth, async (req, res) => {
   try {
     const { hasAccountFilterValue, accountIdValue, accountFilterSqlValue, debugValue } =
@@ -549,6 +1037,15 @@ app.get("/api/v1/accounts", requireAuth, async (req, res) => {
 app.get("/api/v1/dashboard/net-worth", requireAuth, async (req, res) => {
   try {
     const userIdValue = req.user.userId;
+    const { hasAccountFilterValue, accountIdValue } = resolveAccountFilter(req, "a");
+
+    const paramsValue = [userIdValue];
+    let accountFilterWhereValue = "";
+
+    if (hasAccountFilterValue && accountIdValue != null) {
+      accountFilterWhereValue = " AND a.id = ? ";
+      paramsValue.push(accountIdValue);
+    }
 
     const sqlValue = `
       SELECT
@@ -557,50 +1054,56 @@ app.get("/api/v1/dashboard/net-worth", requireAuth, async (req, res) => {
         a.type AS type,
         a.subtype AS subtype,
         a.mask AS mask,
-        COALESCE(a.account_balance) AS balance
+        COALESCE(a.account_balance, 0) AS balance
       FROM plaid_accounts a
       WHERE a.user_id = ?
+      ${accountFilterWhereValue}
       ORDER BY name ASC;
     `;
 
-    const paramsValue = [userIdValue];
-   
-    const rowsValue = await runQuery(sqlValue, userIdValue);
+    const rowsValue = await runQuery(sqlValue, paramsValue);
 
-    const accountsValue = rowsValue.map((r) => {
-      const typeValue = String(r.type || "").toLowerCase();
-      const rawBalanceValue = Number(r.balance ?? 0);
+    const accountsValue = rowsValue.map((rValue) => {
+      const typeValue = String(rValue.type || "").toLowerCase();
+      const rawBalanceValue = Number(rValue.balance ?? 0);
 
-      const isLiabilityValue = typeValue === "credit" || typeValue === "loan";
+      const isLiabilityValue =
+        typeValue === "credit" ||
+        typeValue === "loan" ||
+        typeValue === "liability";
+
       const normalizedBalanceValue = Math.abs(rawBalanceValue);
 
       return {
-        accountId: Number(r.accountId),
-        name: String(r.name),
-        mask: r.mask == null ? null : String(r.mask),
-        type: r.type == null ? null : String(r.type),
-        subtype: r.subtype == null ? null : String(r.subtype),
+        accountId: Number(rValue.accountId),
+        name: String(rValue.name ?? "Account"),
+        mask: rValue.mask == null ? null : String(rValue.mask),
+        type: rValue.type == null ? null : String(rValue.type),
+        subtype: rValue.subtype == null ? null : String(rValue.subtype),
         balance: Number(normalizedBalanceValue.toFixed(2)),
         bucket: isLiabilityValue ? "liability" : "asset",
       };
     });
 
     const assetsTotal = accountsValue
-      .filter((a) => a.bucket === "asset")
-      .reduce((sum, a) => sum + a.balance, 0);
+      .filter((accountValue) => accountValue.bucket === "asset")
+      .reduce((sumValue, accountValue) => sumValue + accountValue.balance, 0);
 
     const liabilitiesTotal = accountsValue
-      .filter((a) => a.bucket === "liability")
-      .reduce((sum, a) => sum + a.balance, 0);
+      .filter((accountValue) => accountValue.bucket === "liability")
+      .reduce((sumValue, accountValue) => sumValue + accountValue.balance, 0);
 
-    res.json({
+    return res.json({
       assetsTotal: Number(assetsTotal.toFixed(2)),
       liabilitiesTotal: Number(liabilitiesTotal.toFixed(2)),
       netWorth: Number((assetsTotal - liabilitiesTotal).toFixed(2)),
+      accountIdFilterApplied: hasAccountFilterValue,
+      selectedAccountId: accountIdValue,
+      warning: accountsValue.length ? "" : "No linked accounts were found for this user yet.",
       accounts: accountsValue,
     });
   } catch (errValue) {
-    res.status(500).json({ error: String(errValue) });
+    return res.status(500).json({ error: String(errValue) });
   }
 });
 
@@ -1416,6 +1919,748 @@ app.delete("/api/v1/budgets/:budgetId", requireAuth, async (req, res) => {
     res.status(500).json({ error: String(errValue) });
   }
 });
+
+
+/**
+ * GET /api/v1/account/overview
+ * Combines the current user, linked institutions, and net-worth summary into
+ * a single payload for the account page.
+ * The current React page still works with the smaller routes, but this gives
+ * you one stable endpoint for future cleanup.
+ */
+app.get("/api/v1/account/overview", requireAuth, async (req, res) => {
+  try {
+    const userIdValue = Number(req.user?.userId ?? 0);
+
+    const [userRowsValue, itemRowsValue, accountRowsValue] = await Promise.all([
+      runQuery(
+        `
+        SELECT
+          user_id AS userId,
+          email,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+        FROM users
+        WHERE user_id = ?
+        LIMIT ${singleRowLimitValue};
+        `,
+        [userIdValue],
+      ),
+      runQuery(
+        `
+        SELECT
+          plaid_item_id AS itemId,
+          institution_id AS institutionId,
+          institution_name AS institutionName,
+          created_at AS createdAt
+        FROM plaid_items
+        WHERE user_id = ?
+        ORDER BY created_at DESC;
+        `,
+        [userIdValue],
+      ),
+      runQuery(
+        `
+        SELECT
+          a.id AS accountId,
+          COALESCE(a.official_name, a.name, 'Account') AS name,
+          a.type AS type,
+          a.subtype AS subtype,
+          a.mask AS mask,
+          COALESCE(a.account_balance, 0) AS balance
+        FROM plaid_accounts a
+        WHERE a.user_id = ?
+        ORDER BY name ASC;
+        `,
+        [userIdValue],
+      ),
+    ]);
+
+    const userRowValue = userRowsValue[0] ?? req.user;
+    const accountsValue = accountRowsValue.map((rowValue) => {
+      const typeValue = String(rowValue.type || "").toLowerCase();
+      const isLiabilityValue =
+        typeValue === "credit" ||
+        typeValue === "loan" ||
+        typeValue === "liability";
+
+      return {
+        accountId: Number(rowValue.accountId),
+        name: String(rowValue.name ?? "Account"),
+        mask: rowValue.mask == null ? null : String(rowValue.mask),
+        type: rowValue.type == null ? null : String(rowValue.type),
+        subtype: rowValue.subtype == null ? null : String(rowValue.subtype),
+        balance: Number(Math.abs(Number(rowValue.balance ?? 0)).toFixed(2)),
+        bucket: isLiabilityValue ? "liability" : "asset",
+      };
+    });
+
+    const assetsTotalValue = accountsValue
+      .filter((accountValue) => accountValue.bucket === "asset")
+      .reduce((sumValue, accountValue) => sumValue + accountValue.balance, 0);
+
+    const liabilitiesTotalValue = accountsValue
+      .filter((accountValue) => accountValue.bucket === "liability")
+      .reduce((sumValue, accountValue) => sumValue + accountValue.balance, 0);
+
+    return res.json({
+      user: {
+        userId: Number(userRowValue.userId ?? req.user.userId ?? 0),
+        email: String(userRowValue.email ?? req.user.email ?? ""),
+        createdAt:
+          userRowValue.createdAt instanceof Date
+            ? userRowValue.createdAt.toISOString()
+            : String(userRowValue.createdAt ?? ""),
+        updatedAt:
+          userRowValue.updatedAt instanceof Date
+            ? userRowValue.updatedAt.toISOString()
+            : String(userRowValue.updatedAt ?? ""),
+      },
+      items: itemRowsValue.map((rowValue) => ({
+        itemId: String(rowValue.itemId),
+        institutionId: rowValue.institutionId == null ? null : String(rowValue.institutionId),
+        institutionName: rowValue.institutionName == null ? null : String(rowValue.institutionName),
+        createdAt:
+          rowValue.createdAt instanceof Date
+            ? rowValue.createdAt.toISOString()
+            : String(rowValue.createdAt ?? ""),
+      })),
+      netWorth: {
+        assetsTotal: Number(assetsTotalValue.toFixed(2)),
+        liabilitiesTotal: Number(liabilitiesTotalValue.toFixed(2)),
+        netWorth: Number((assetsTotalValue - liabilitiesTotalValue).toFixed(2)),
+        accounts: accountsValue,
+      },
+    });
+  } catch (errValue) {
+    return res.status(500).json({ error: String(errValue) });
+  }
+});
+
+// Plaid Routes
+app.post("/api/v1/plaid/create-link-token", requireAuth, async (req, res) => {
+  try {
+    const userIdValue = req.user.userId;
+
+    const requestValue = {
+      user: {
+        client_user_id: String(userIdValue),
+      },
+      client_name: "Income Generator-Inator",
+      products: [Products.Transactions],
+      country_codes: [CountryCode.Us],
+      language: "en",
+    };
+
+    if (process.env.PLAID_REDIRECT_URI) {
+      requestValue.redirect_uri = process.env.PLAID_REDIRECT_URI;
+    }
+
+    const responseValue = await plaidClientValue.linkTokenCreate(requestValue);
+    const linkTokenValue = String(responseValue.data.link_token);
+    const expirationValue = responseValue.data.expiration
+      ? new Date(responseValue.data.expiration)
+      : null;
+
+    await runQuery(
+      `
+      INSERT INTO plaid_link_sessions (
+        user_id,
+        link_token,
+        expires_at,
+        is_used,
+        created_at
+      )
+      VALUES (?, ?, ?, 0, NOW())
+      ON DUPLICATE KEY UPDATE
+        expires_at = VALUES(expires_at),
+        is_used = 0,
+        used_at = NULL,
+        created_at = NOW();
+      `,
+      [userIdValue, linkTokenValue, expirationValue],
+    );
+
+    return res.json({
+      linkToken: linkTokenValue,
+      expiration: expirationValue ? expirationValue.toISOString() : null,
+    });
+  } catch (errValue) {
+    return res.status(500).json({ error: String(errValue) });
+  }
+});
+
+app.post("/api/v1/plaid/exchange-public-token", requireAuth, async (req, res) => {
+  try {
+    const userIdValue = req.user.userId;
+    const publicTokenValue = String(req.body?.publicToken || "").trim();
+    const metadataValue = req.body?.metadata ?? null;
+    const linkTokenValue = String(req.body?.linkToken || "").trim();
+
+    if (!publicTokenValue) {
+      return res.status(400).json({ error: "publicToken required" });
+    }
+
+    const exchangeResponseValue = await plaidClientValue.itemPublicTokenExchange({
+      public_token: publicTokenValue,
+    });
+
+    const accessTokenValue = String(exchangeResponseValue.data.access_token);
+    const itemIdValue = String(exchangeResponseValue.data.item_id);
+    const institutionIdValue = metadataValue?.institution?.institution_id ?? null;
+    const institutionNameValue = metadataValue?.institution?.name ?? null;
+    const encryptedAccessTokenValue = encryptTokenValue(accessTokenValue);
+
+    await runQuery(
+      `
+      INSERT INTO plaid_items (
+        user_id,
+        plaid_item_id,
+        access_token_cipher,
+        institution_id,
+        institution_name,
+        status,
+        created_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, 'active', NOW(), NOW())
+      ON DUPLICATE KEY UPDATE
+        access_token_cipher = VALUES(access_token_cipher),
+        institution_id = VALUES(institution_id),
+        institution_name = VALUES(institution_name),
+        status = 'active',
+        updated_at = NOW();
+      `,
+      [
+        userIdValue,
+        itemIdValue,
+        encryptedAccessTokenValue,
+        institutionIdValue,
+        institutionNameValue,
+      ],
+    );
+
+    if (linkTokenValue) {
+      await runQuery(
+        `
+        UPDATE plaid_link_sessions
+        SET is_used = 1, used_at = NOW()
+        WHERE user_id = ? AND link_token = ?;
+        `,
+        [userIdValue, linkTokenValue],
+      );
+    }
+
+    return res.status(201).json({
+      ok: true,
+      itemId: itemIdValue,
+      institutionName: institutionNameValue,
+    });
+  } catch (errValue) {
+    return res.status(500).json({ error: String(errValue) });
+  }
+});
+
+app.post("/api/v1/plaid/sync-accounts", requireAuth, async (req, res) => {
+  try {
+    const userIdValue = req.user.userId;
+    const itemIdValue = String(req.body?.itemId || "").trim();
+
+    if (!itemIdValue) {
+      return res.status(400).json({ error: "itemId required" });
+    }
+
+    const itemRowsValue = await runQuery(
+      `
+      SELECT id, access_token_cipher
+      FROM plaid_items
+      WHERE user_id = ? AND plaid_item_id = ?
+      LIMIT 1;
+      `,
+      [userIdValue, itemIdValue],
+    );
+
+    if (!itemRowsValue.length) {
+      return res.status(404).json({ error: "Linked item not found" });
+    }
+
+    const localItemIdValue = Number(itemRowsValue[0].id);
+    const accessTokenValue = decryptTokenValue(itemRowsValue[0].access_token_cipher);
+
+    const accountsResponseValue = await plaidClientValue.accountsGet({
+      access_token: accessTokenValue,
+    });
+
+    const plaidAccountsValue = Array.isArray(accountsResponseValue.data.accounts)
+      ? accountsResponseValue.data.accounts
+      : [];
+
+    const upsertSqlValue = `
+      INSERT INTO plaid_accounts (
+        user_id,
+        item_id,
+        plaid_account_id,
+        official_name,
+        name,
+        mask,
+        type,
+        subtype,
+        iso_currency_code,
+        unofficial_currency_code,
+        account_balance,
+        available_balance,
+        last_balance_at,
+        is_active,
+        created_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 1, NOW(), NOW())
+      ON DUPLICATE KEY UPDATE
+        official_name = VALUES(official_name),
+        name = VALUES(name),
+        mask = VALUES(mask),
+        type = VALUES(type),
+        subtype = VALUES(subtype),
+        iso_currency_code = VALUES(iso_currency_code),
+        unofficial_currency_code = VALUES(unofficial_currency_code),
+        account_balance = VALUES(account_balance),
+        available_balance = VALUES(available_balance),
+        last_balance_at = NOW(),
+        is_active = 1,
+        updated_at = NOW();
+    `;
+
+    for (const accountValue of plaidAccountsValue) {
+      await runQuery(upsertSqlValue, [
+        userIdValue,
+        localItemIdValue,
+        String(accountValue.account_id),
+        accountValue.official_name ?? null,
+        accountValue.name ?? null,
+        accountValue.mask ?? null,
+        accountValue.type ?? null,
+        accountValue.subtype ?? null,
+        accountValue.balances?.iso_currency_code ?? null,
+        accountValue.balances?.unofficial_currency_code ?? null,
+        Number(accountValue.balances?.current ?? 0),
+        accountValue.balances?.available == null
+          ? null
+          : Number(accountValue.balances.available),
+      ]);
+    }
+
+    await runQuery(
+      `
+      UPDATE plaid_items
+      SET last_sync_at = NOW(), updated_at = NOW()
+      WHERE id = ?;
+      `,
+      [localItemIdValue],
+    );
+
+    return res.json({
+      ok: true,
+      accountsSynced: plaidAccountsValue.length,
+    });
+  } catch (errValue) {
+    return res.status(500).json({ error: String(errValue) });
+  }
+});
+
+app.post("/api/v1/plaid/sync-transactions", requireAuth, async (req, res) => {
+  try {
+    const userIdValue = req.user.userId;
+    const itemIdValue = String(req.body?.itemId || "").trim();
+
+    if (!itemIdValue) {
+      return res.status(400).json({ error: "itemId required" });
+    }
+
+    const itemRowsValue = await runQuery(
+      `
+      SELECT id, access_token_cipher, transactions_cursor
+      FROM plaid_items
+      WHERE user_id = ? AND plaid_item_id = ?
+      LIMIT 1;
+      `,
+      [userIdValue, itemIdValue],
+    );
+
+    if (!itemRowsValue.length) {
+      return res.status(404).json({ error: "Linked item not found" });
+    }
+
+    const localItemIdValue = Number(itemRowsValue[0].id);
+    const accessTokenValue = decryptTokenValue(itemRowsValue[0].access_token_cipher);
+    let cursorValue = itemRowsValue[0].transactions_cursor
+      ? String(itemRowsValue[0].transactions_cursor)
+      : null;
+
+    let hasMoreValue = true;
+    let addedTransactionsCountValue = 0;
+
+    const insertTransactionSqlValue = `
+      INSERT INTO plaid_transactions (
+        user_id,
+        account_id,
+        plaid_transaction_id,
+        amount,
+        iso_currency_code,
+        unofficial_currency_code,
+        datetime_posted,
+        authorized_datetime,
+        name_legacy,
+        merchant_name,
+        payment_channel,
+        transaction_type,
+        pending,
+        pending_transaction_id,
+        location_json,
+        payment_meta_json,
+        created_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+      ON DUPLICATE KEY UPDATE
+        amount = VALUES(amount),
+        iso_currency_code = VALUES(iso_currency_code),
+        unofficial_currency_code = VALUES(unofficial_currency_code),
+        datetime_posted = VALUES(datetime_posted),
+        authorized_datetime = VALUES(authorized_datetime),
+        name_legacy = VALUES(name_legacy),
+        merchant_name = VALUES(merchant_name),
+        payment_channel = VALUES(payment_channel),
+        transaction_type = VALUES(transaction_type),
+        pending = VALUES(pending),
+        pending_transaction_id = VALUES(pending_transaction_id),
+        location_json = VALUES(location_json),
+        payment_meta_json = VALUES(payment_meta_json),
+        updated_at = NOW();
+    `;
+
+    const upsertPfcSqlValue = `
+      INSERT INTO plaid_transaction_pfc (
+        transaction_id,
+        primary_category,
+        detailed_category,
+        confidence,
+        created_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, NOW(), NOW())
+      ON DUPLICATE KEY UPDATE
+        primary_category = VALUES(primary_category),
+        detailed_category = VALUES(detailed_category),
+        confidence = VALUES(confidence),
+        updated_at = NOW();
+    `;
+
+    while (hasMoreValue) {
+      const syncResponseValue = await plaidClientValue.transactionsSync({
+        access_token: accessTokenValue,
+        cursor: cursorValue,
+      });
+
+      const addedValue = Array.isArray(syncResponseValue.data.added)
+        ? syncResponseValue.data.added
+        : [];
+
+      for (const transactionValue of addedValue) {
+        const accountRowsValue = await runQuery(
+          `
+          SELECT id
+          FROM plaid_accounts
+          WHERE user_id = ? AND plaid_account_id = ?
+          LIMIT 1;
+          `,
+          [userIdValue, String(transactionValue.account_id)],
+        );
+
+        if (!accountRowsValue.length) {
+          continue;
+        }
+
+        const localAccountIdValue = Number(accountRowsValue[0].id);
+
+        await runQuery(insertTransactionSqlValue, [
+          userIdValue,
+          localAccountIdValue,
+          String(transactionValue.transaction_id),
+          Number(transactionValue.amount ?? 0),
+          transactionValue.iso_currency_code ?? null,
+          transactionValue.unofficial_currency_code ?? null,
+          transactionValue.datetime ?? `${transactionValue.date} 00:00:00`,
+          transactionValue.authorized_datetime ?? null,
+          transactionValue.name ?? null,
+          transactionValue.merchant_name ?? null,
+          transactionValue.payment_channel ?? null,
+          transactionValue.transaction_type ?? null,
+          Number(Boolean(transactionValue.pending)),
+          transactionValue.pending_transaction_id ?? null,
+          JSON.stringify(transactionValue.location ?? null),
+          JSON.stringify(transactionValue.payment_meta ?? null),
+        ]);
+
+        const localTransactionRowsValue = await runQuery(
+          `
+          SELECT id
+          FROM plaid_transactions
+          WHERE plaid_transaction_id = ?
+          LIMIT 1;
+          `,
+          [String(transactionValue.transaction_id)],
+        );
+
+        if (localTransactionRowsValue.length) {
+          const localTransactionIdValue = Number(localTransactionRowsValue[0].id);
+          const pfcValue = transactionValue.personal_finance_category ?? null;
+
+          await runQuery(upsertPfcSqlValue, [
+            localTransactionIdValue,
+            pfcValue?.primary ?? "UNCATEGORIZED",
+            pfcValue?.detailed ?? null,
+            pfcValue?.confidence_level ?? "UNKNOWN",
+          ]);
+        }
+
+        addedTransactionsCountValue += 1;
+      }
+
+      cursorValue = syncResponseValue.data.next_cursor ?? cursorValue;
+      hasMoreValue = Boolean(syncResponseValue.data.has_more);
+    }
+
+    await runQuery(
+      `
+      UPDATE plaid_items
+      SET
+        transactions_cursor = ?,
+        last_successful_txn_pull = NOW(),
+        last_sync_at = NOW(),
+        updated_at = NOW()
+      WHERE id = ?;
+      `,
+      [cursorValue, localItemIdValue],
+    );
+
+    return res.json({
+      ok: true,
+      transactionsSynced: addedTransactionsCountValue,
+    });
+  } catch (errValue) {
+    return res.status(500).json({ error: String(errValue) });
+  }
+});
+
+app.post("/api/v1/plaid/sync-all", requireAuth, async (req, res) => {
+  try {
+    const userIdValue = req.user.userId;
+    const itemIdValue = String(req.body?.itemId || "").trim();
+
+    if (!itemIdValue) {
+      return res.status(400).json({ error: "itemId required" });
+    }
+
+    const itemRowsValue = await runQuery(
+      `
+      SELECT plaid_item_id
+      FROM plaid_items
+      WHERE user_id = ? AND plaid_item_id = ?
+      LIMIT 1;
+      `,
+      [userIdValue, itemIdValue],
+    );
+
+    if (!itemRowsValue.length) {
+      return res.status(404).json({ error: "Linked item not found" });
+    }
+
+    return res.json({ ok: true, itemId: itemIdValue });
+  } catch (errValue) {
+    return res.status(500).json({ error: String(errValue) });
+  }
+});
+
+app.get("/api/v1/plaid/items", requireAuth, async (req, res) => {
+  try {
+    const userIdValue = Number(req.user.userId);
+
+    const rowsValue = await runQuery(
+      `
+      SELECT
+        plaid_item_id AS itemId,
+        institution_id AS institutionId,
+        institution_name AS institutionName,
+        created_at AS createdAt
+      FROM plaid_items
+      WHERE user_id = ?
+      ORDER BY created_at DESC;
+      `,
+      [userIdValue]
+    );
+
+    return res.json({
+      items: rowsValue.map((rowValue) => ({
+        itemId: String(rowValue.itemId),
+        institutionId: rowValue.institutionId == null ? null : String(rowValue.institutionId),
+        institutionName: rowValue.institutionName == null ? null : String(rowValue.institutionName),
+        createdAt:
+          rowValue.createdAt instanceof Date
+            ? rowValue.createdAt.toISOString()
+            : String(rowValue.createdAt),
+      })),
+    });
+  } catch (errValue) {
+    return res.status(500).json({ error: String(errValue?.response?.data?.error_message || errValue.message || errValue) });
+  }
+});
+
+app.delete("/api/v1/plaid/items/:itemId", requireAuth, async (req, res) => {
+  try {
+    const plaidClientInstanceValue = getPlaidClientOrThrowValue();
+    const userIdValue = Number(req.user.userId);
+    const itemIdValue = String(req.params.itemId || "").trim();
+
+    const itemRowsValue = await runQuery(
+      `
+      SELECT id, access_token_cipher
+      FROM plaid_items
+      WHERE user_id = ? AND plaid_item_id = ?
+      LIMIT ${singleRowLimitValue};
+      `,
+      [userIdValue, itemIdValue],
+    );
+
+    if (!itemRowsValue.length) {
+      return res.status(404).json({ error: "Linked item not found" });
+    }
+
+    const localItemIdValue = Number(itemRowsValue[0].id);
+    const accessTokenValue = String(itemRowsValue[0].access_token || "");
+
+    if (accessTokenValue) {
+      try {
+        await plaidClientInstanceValue.itemRemove({ access_token: accessTokenValue });
+      } catch (plaidRemoveErrValue) {
+        // Continue local cleanup even if the remote item was already gone.
+      }
+    }
+
+    await runQuery(
+      `
+      DELETE pfc
+      FROM plaid_transaction_pfc pfc
+      JOIN plaid_transactions t
+        ON t.id = pfc.transaction_id
+      WHERE t.user_id = ? AND t.item_id = ?;
+      `,
+      [userIdValue, localItemIdValue],
+    );
+
+    await runQuery(
+      `
+      DELETE FROM plaid_transactions
+      WHERE user_id = ? AND item_id = ?;
+      `,
+      [userIdValue, localItemIdValue],
+    );
+
+    await runQuery(
+      `
+      DELETE FROM plaid_accounts
+      WHERE user_id = ? AND item_id = ?;
+      `,
+      [userIdValue, localItemIdValue],
+    );
+
+    await runQuery(
+      `
+      DELETE FROM plaid_items
+      WHERE user_id = ? AND plaid_item_id = ?;
+      `,
+      [userIdValue, itemIdValue],
+    );
+
+    return res.json({ ok: true });
+  } catch (errValue) {
+    return res.status(500).json({ error: String(errValue?.response?.data?.error_message || errValue.message || errValue) });
+  }
+});
+
+app.post("/api/v1/plaid/refresh-balances", requireAuth, async (req, res) => {
+  try {
+    const plaidClientInstanceValue = getPlaidClientOrThrowValue();
+    const userIdValue = Number(req.user.userId);
+    const requestedItemIdValue = String(req.body?.itemId || "").trim();
+
+    const rowsValue = await runQuery(
+      `
+      SELECT id, plaid_item_id AS itemId, access_token_cipher
+      FROM plaid_items
+      WHERE user_id = ?
+      ${requestedItemIdValue ? "AND plaid_item_id = ?" : ""}
+      ORDER BY created_at DESC;
+      `,
+      requestedItemIdValue ? [userIdValue, requestedItemIdValue] : [userIdValue],
+    );
+
+    let accountsUpdatedValue = 0;
+
+    for (const rowValue of rowsValue) {
+      const localItemIdValue = Number(rowValue.id);
+      const accessTokenValue = String(rowValue.access_token_cipher || "");
+
+      const balancesResponseValue = await plaidClientInstanceValue.accountsBalanceGet({
+        access_token: accessTokenValue,
+      });
+
+      const accountsValue = Array.isArray(balancesResponseValue?.data?.accounts)
+        ? balancesResponseValue.data.accounts
+        : [];
+
+      for (const accountValue of accountsValue) {
+        const balanceValue =
+          accountValue?.balances?.current ?? accountValue?.balances?.available ?? 0;
+
+        await runQuery(
+          `
+          UPDATE plaid_accounts
+          SET
+            official_name = ?,
+            name = ?,
+            mask = ?,
+            type = ?,
+            subtype = ?,
+            account_balance = ?,
+            updated_at = NOW()
+          WHERE user_id = ? AND item_id = ? AND plaid_account_id = ?;
+          `,
+          [
+            accountValue.official_name ?? null,
+            accountValue.name ?? null,
+            accountValue.mask ?? null,
+            accountValue.type ?? null,
+            accountValue.subtype ?? null,
+            Number(balanceValue ?? 0),
+            userIdValue,
+            localItemIdValue,
+            String(accountValue.account_id),
+          ],
+        );
+
+        accountsUpdatedValue += 1;
+      }
+    }
+
+    return res.json({
+      ok: true,
+      accountsUpdated: accountsUpdatedValue,
+    });
+  } catch (errValue) {
+    return res.status(500).json({ error: String(errValue?.response?.data?.error_message || errValue.message || errValue) });
+  }
+});
+
 
 //Localhosting call
 app.listen(portValue, () => console.log(`✅ API on http://localhost:${portValue}`));

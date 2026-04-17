@@ -1,15 +1,20 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { ChakraProvider } from "@chakra-ui/react";
+import { system } from "../../Styles/theme";
+import "../../Styles/index.css";
 import Transactions from "./Transactions";
 
-const rootElement = document.getElementById("root");
+const rootElementValue = document.getElementById("root");
 
-if (!rootElement) {
+if (!rootElementValue) {
   throw new Error("Root element (#root) not found. Check your HTML file.");
 }
 
-ReactDOM.createRoot(rootElement).render(
+ReactDOM.createRoot(rootElementValue).render(
   <React.StrictMode>
-    <Transactions />
-  </React.StrictMode>
+    <ChakraProvider value={system}>
+      <Transactions />
+    </ChakraProvider>
+  </React.StrictMode>,
 );

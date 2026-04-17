@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 //Spending by category Pie Chart that takes Values from the DB/Plaid and Displays the amount spent per category as a pie chart 
 //with a filterable legend and hoverable labels
 /*
@@ -12,6 +14,7 @@ import { Chart as ChartJs, ArcElement, Tooltip, Legend } from "chart.js";
 import { apiClient } from "./apiClient";
 import type {SpendingByCategoryRow, SpendingPieChartProps} from "./types";
 import { formatMoney, safeText, getAmountToneColor } from "./SharedFunctions";
+import { Box } from "@chakra-ui/react/box";
 
 //chart js requires registering imports
 ChartJs.register(ArcElement, Tooltip, Legend);
@@ -114,6 +117,8 @@ export default function SpendingPieChart({timeFrame, accountIdValue = "all"}: Sp
 
   //retruns the pie chart with the data.
   return (
-      <Pie height="420" data={chartData} options={chartOptions} />
+    <Box h={{ base: "520px", md: "560px" }} w="100%">
+      <Pie data={chartData} options={chartOptions} />
+    </Box> 
   );
 }

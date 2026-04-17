@@ -14,7 +14,9 @@
 // When this will be used: Base URL for all API requests in production builds.
 const apiBaseUrlValue =
   (import.meta as any)?.env?.VITE_API_BASE_URL?.trim?.() ||
-  "https://d1ge6vvg3l32dq.cloudfront.net";
+  "http://localhost:5000"
+  //"https://d1ge6vvg3l32dq.cloudfront.net";
+
 
 /**
  * When this will be used: Retrieves the current auth token from storage.
@@ -22,6 +24,16 @@ const apiBaseUrlValue =
  */
 function getAuthTokenValue(): string {
   return String(localStorage.getItem("authToken") ?? "").trim();
+}
+
+// File: src/Shared/apiClient.ts
+
+// This helper returns the base API URL used by all requests.
+// Inputs: none
+// Output: string API base URL
+// Purpose: keep the backend URL centralized for easier dev/prod switching.
+export function getApiBaseUrl(): string {
+  return apiBaseUrlValue;
 }
 
 /**

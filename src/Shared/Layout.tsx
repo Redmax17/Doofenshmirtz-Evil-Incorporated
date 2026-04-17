@@ -1,6 +1,8 @@
 // src/Shared/Layout.tsx
+import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { Box, Button, Container, Flex, HStack, Link, Text } from "@chakra-ui/react";
+import { hasStoredAuthTokenValue, logoutValue } from "./authStorage";
 
 /** Controls which top nav item appears active */
 export type ActivePageKey =
@@ -28,17 +30,17 @@ type NavItem = {
   isActive?: boolean;
 };
 
-function NavLink(navItem: NavItem) {
+function NavLink(navItemValue: NavItem) {
   return (
     <Link
-      href={navItem.href}
+      href={navItemValue.href}
       px={3}
       py={2}
       borderRadius="md"
       fontSize="sm"
       fontWeight={800}
-      color={navItem.isActive ? "accent.400" : tc}
-      bg={navItem.isActive ? "brand.550" : bgc}
+      color={navItemValue.isActive ? "accent.400" : tc}
+      bg={navItemValue.isActive ? "brand.550" : bgc}
       _hover={{
         textDecoration: "none",
         bg: "rgba(93,200,155,0.14)",
@@ -46,32 +48,45 @@ function NavLink(navItem: NavItem) {
       }}
       whiteSpace="nowrap"
     >
-      {navItem.label}
+      {navItemValue.label}
     </Link>
   );
 }
 
-export function TopNav(props: { activePage: ActivePageKey }) {
-  const { activePage } = props;
+export function TopNav(propsValue: { activePage: ActivePageKey }) {
+  const { activePage } = propsValue;
+  const isAuthenticatedValue = hasStoredAuthTokenValue();
 
-  const navItems: NavItem[] = [
+  const navItemsValue: NavItem[] = [
     { label: "Dashboard", href: "./Dashboard.html", isActive: activePage === "dashboard" },
     { label: "Budgets", href: "./Budgets.html", isActive: activePage === "budgets" },
     { label: "Transactions", href: "./Transactions.html", isActive: activePage === "transactions" },
     { label: "Analytics", href: "./Analytics.html", isActive: activePage === "analytics" },
-    { label: "Account", href: "./Account.html", isActive: activePage === "account" }, // ✅ singular
+    { label: "Account", href: "./Account.html", isActive: activePage === "account" },
   ];
 
+  const authButtonTextValue = useMemo(() => {
+    if (activePage === "login") return isAuthenticatedValue ? "Log out" : "Register";
+    if (activePage === "register") return isAuthenticatedValue ? "Log out" : "Login";
+    return isAuthenticatedValue ? "Log out" : "Login";
+  }, [activePage, isAuthenticatedValue]);
+
+  const authButtonActionValue = (): void => {
+    if (isAuthenticatedValue) {
+      logoutValue("./Login.html");
+      return;
+    }
+
+    if (activePage === "login") {
+      window.location.href = "./Register.html";
+      return;
+    }
+
+    window.location.href = "./Login.html";
+  };
+
   return (
-    <Box
-      position="sticky"
-      top={0}
-      zIndex={50}
-      bg={bgc}
-      borderBottomWidth="1px"
-      borderColor="borderSubtle"
-      boxShadow="sm"
-    >
+    <Box position="sticky" top={0} zIndex={50} bg={bgc} borderBottomWidth="1px" borderColor="borderSubtle" boxShadow="sm">
       <Container maxW="6xl" py={3}>
         <Flex align="center" justify="space-between" gap={4}>
           <HStack gap={3} minW="fit-content">
@@ -103,12 +118,12 @@ export function TopNav(props: { activePage: ActivePageKey }) {
           </HStack>
 
           <HStack gap={2} flex={1} justify="center" display={{ base: "none", md: "flex" }}>
-            {navItems.map((navItem) => (
+            {navItemsValue.map((navItemValue) => (
               <NavLink
-                key={navItem.href}
-                label={navItem.label}
-                href={navItem.href}
-                isActive={navItem.isActive}
+                key={navItemValue.href}
+                label={navItemValue.label}
+                href={navItemValue.href}
+                isActive={navItemValue.isActive}
               />
             ))}
           </HStack>
@@ -121,11 +136,11 @@ export function TopNav(props: { activePage: ActivePageKey }) {
               fontWeight={900}
               borderRadius="md"
               size="sm"
-              onClick={() => console.log("sync")}
+              onClick={() => window.location.reload()}
               color={btnt}
               bg={btnc}
             >
-              Sync
+              Refresh
             </Button>
 
             <Button
@@ -135,20 +150,21 @@ export function TopNav(props: { activePage: ActivePageKey }) {
               borderRadius="md"
               size="sm"
               fontWeight={900}
+              onClick={authButtonActionValue}
             >
-              <a href="/logout">Log out</a>
+              {authButtonTextValue}
             </Button>
           </HStack>
         </Flex>
 
         <Box display={{ base: "block", md: "none" }} mt={3}>
           <HStack gap={2} overflowX="auto" pb={2}>
-            {navItems.map((navItem) => (
+            {navItemsValue.map((navItemValue) => (
               <NavLink
-                key={navItem.href}
-                label={navItem.label}
-                href={navItem.href}
-                isActive={navItem.isActive}
+                key={navItemValue.href}
+                label={navItemValue.label}
+                href={navItemValue.href}
+                isActive={navItemValue.isActive}
               />
             ))}
           </HStack>
@@ -160,9 +176,9 @@ export function TopNav(props: { activePage: ActivePageKey }) {
 
 export default function Layout({ activePage, children }: LayoutProps) {
   return (
-    <div className="layoutRoot">
+    <Box minH="100vh" bg="brand.100">
       <TopNav activePage={activePage} />
-      <section className="mainContent">{children}</section>
-    </div>
+      <Box as="section">{children}</Box>
+    </Box>
   );
 }

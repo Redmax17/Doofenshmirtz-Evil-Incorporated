@@ -1,15 +1,20 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import Register from "../Register/Register";
+import { ChakraProvider } from "@chakra-ui/react";
+import { system } from "../../Styles/theme";
+import "../../Styles/index.css";
+import Register from "./Register";
 
-const rootElement = document.getElementById("root");
+const rootElementValue = document.getElementById("root");
 
-if (!rootElement) {
+if (!rootElementValue) {
   throw new Error("Root element (#root) not found. Check your HTML file.");
 }
 
-ReactDOM.createRoot(rootElement).render(
+ReactDOM.createRoot(rootElementValue).render(
   <React.StrictMode>
-    <Register />
-  </React.StrictMode>
+    <ChakraProvider value={system}>
+      <Register />
+    </ChakraProvider>
+  </React.StrictMode>,
 );

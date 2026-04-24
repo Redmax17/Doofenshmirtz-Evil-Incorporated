@@ -13,9 +13,7 @@
 
 // When this will be used: Base URL for all API requests in production builds.
 const apiBaseUrlValue =
-  (import.meta as any)?.env?.VITE_API_BASE_URL?.trim?.() ||
-  "http://localhost:5000"
-  //"https://d1ge6vvg3l32dq.cloudfront.net";
+  (import.meta as any)?.env?.VITE_API_BASE_URL?.trim?.();
 
 
 /**

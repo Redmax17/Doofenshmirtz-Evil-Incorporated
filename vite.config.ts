@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
+import { register } from "module";
 
 export default defineConfig({
   plugins: [react()],
@@ -13,6 +14,8 @@ export default defineConfig({
         analytics: resolve(__dirname, "Analytics.html"),
         accounts: resolve(__dirname, "Account.html"),
         transactions: resolve(__dirname, "Transactions.html"),
+        login: resolve(__dirname, "Login.html"),
+        register: resolve(__dirname, "Register.html")
       },
     },
   },

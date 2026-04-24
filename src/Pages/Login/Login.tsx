@@ -83,13 +83,13 @@ export default function Login() {
             <Box bg="brand.50" borderWidth="1px" borderColor="blackAlpha.100" borderRadius="18px" p={{ base: 5, md: 6 }}>
               <Stack gap={4}>
                 <Field.Root required>
-                  <Field.Label>Email</Field.Label>
-                  <Input type="email" value={emailValue} onChange={(eventValue) => setEmailValue(eventValue.target.value)} placeholder="you@example.com" bg="white" />
+                  <Field.Label color={"black"}>Email</Field.Label>
+                  <Input type="email" value={emailValue} color={"black"} onChange={(eventValue) => setEmailValue(eventValue.target.value)} placeholder="you@example.com" bg="white" />
                 </Field.Root>
 
                 <Field.Root required>
-                  <Field.Label>Password</Field.Label>
-                  <Input type="password" value={passwordValue} onChange={(eventValue) => setPasswordValue(eventValue.target.value)} placeholder="Enter your password" bg="white" />
+                  <Field.Label color={"black"}>Password</Field.Label>
+                  <Input type="password" value={passwordValue} color={"black"} onChange={(eventValue) => setPasswordValue(eventValue.target.value)} placeholder="Enter your password" bg="white" />
                 </Field.Root>
 
                 {errorTextValue ? <Text color="negatives.400" fontWeight={800}>{errorTextValue}</Text> : null}

@@ -54,7 +54,7 @@ export default function Register() {
             <Stack gap={4}>
               <Field.Root required>
                 <Field.Label>Email</Field.Label>
-                <Input type="email" value={emailValue} onChange={(eventValue) => setEmailValue(eventValue.target.value)} placeholder="you@example.com" bg="white" />
+                <Input type="email" value={emailValue} color={"black"} onChange={(eventValue) => setEmailValue(eventValue.target.value)} placeholder="you@example.com" bg="white" />
               </Field.Root>
 
               <Field.Root required>

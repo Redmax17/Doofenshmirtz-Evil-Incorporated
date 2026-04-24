@@ -34,8 +34,25 @@ const plaidConfigValue = new Configuration({
 });
 
 const app = express();
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://main.d1nrnrw7ygyo95.amplifyapp.com",
+];
 
-app.use(express.static(path.join(__dirname, 'dist')));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+}));
+
+app.options("*", cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
 
 const portValue = Number(process.env.PORT || 5000);
 const singleRowLimitValue = 1;

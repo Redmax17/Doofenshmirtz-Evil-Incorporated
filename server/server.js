@@ -4,10 +4,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { runQuery } from "./server/db.js";
+import { runQuery } from "./db.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { requireAuth } from "./server/authMiddleware.js";
+import { requireAuth } from "./authMiddleware.js";
 import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } from "plaid";
 import crypto from "crypto";
 import path from "path";

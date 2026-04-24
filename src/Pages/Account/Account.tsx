@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useMemo, useState } from "react";
-import { Badge, Box, Button, Container, Grid, HStack, Spinner, Stack, Text } from "@chakra-ui/react";
+import { Badge, Box, Button, Center, Container, Dialog, Grid, HStack, Input, Portal, Spinner, Stack, Text } from "@chakra-ui/react";
 import Layout from "../../Shared/Layout";
 import AuthStatusCard from "../../Shared/AuthStatusCard";
 import NetWorthCard from "../../Shared/NetWorthCard";
@@ -11,6 +11,7 @@ import { apiClient } from "../../Shared/apiClient";
 import { hasStoredAuthTokenValue, loadCurrentUserValue, logoutValue } from "../../Shared/authStorage";
 import { safeText } from "../../Shared/SharedFunctions";
 import type { AuthUser, PlaidItemsResponse, PlaidInstitutionItem, NetWorthResponse, NetWorthAccountRow } from "../../Shared/types";
+import { deleteUser } from "aws-amplify/auth";
 
 export default function Account() {
   const [userValue, setUserValue] = useState<AuthUser | null>(null);
@@ -19,6 +20,9 @@ export default function Account() {
   const [isLoadingValue, setIsLoadingValue] = useState<boolean>(true);
   const [errorTextValue, setErrorTextValue] = useState<string>("");
   const [isDisconnectingItemIdValue, setIsDisconnectingItemIdValue] = useState<string>("");
+
+  // For Account Deletion
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   const isAuthenticatedValue = hasStoredAuthTokenValue();
 
@@ -71,6 +75,24 @@ export default function Account() {
       setErrorTextValue(errValue instanceof Error ? errValue.message : "Failed to disconnect linked institution.");
     } finally {
       setIsDisconnectingItemIdValue("");
+    }
+  }
+
+  // Handles Account Deletion
+  async function handleAccountDelete() {
+    try {
+
+      // *ToDo*: Delete Bank Account Data
+
+      // Deletes The Users AWS Auth Account
+      await deleteUser();
+
+      // Redircts To Login Page
+      window.location.href = "/Login.html";
+
+      console.log("Account Deleted Successful");
+    } catch (error) {
+      console.error("An Error Occured While Trying To Delete This Account:", error);
     }
   }
 
@@ -177,6 +199,106 @@ export default function Account() {
                   </Stack>
                 )}
               </Box>
+              
+              <Box bg="brand.50" borderWidth="1px" borderColor="blackAlpha.100" borderRadius="18px" p={5}>
+              <Text fontSize="m" fontWeight={900} color="brand.900">
+                Data And Privacy
+              </Text>
+
+              <Box h="1px" w="100%" bg="blackAlpha.100" my={2} />
+
+              {/* Privacy Policy */}
+              <HStack w="95%">
+                {/* Privacy Policy Title And Subtitle */}
+                <Stack gap={1} mb={2} w="100%">
+                  <Text fontSize="sm">
+                    View Privacy Policy
+                  </Text>
+                  <Text fontSize="xs">
+                    View The Privacy Policy Of This App
+                  </Text>
+                </Stack>
+
+                {/* View Privacy Policy Dialog */}
+                <Dialog.Root size={"cover"} key={"xl"}>
+                  <Dialog.Trigger asChild>
+                    <Button variant={"outline"} backgroundColor="brand.900">
+                      View
+                    </Button>
+                  </Dialog.Trigger>
+                  <Portal>
+                    <Dialog.Backdrop />
+                    <Dialog.Positioner>
+                      <Dialog.Content>
+                        <Dialog.Header>
+                          <Dialog.Title>
+                            Privacy Policy
+                          </Dialog.Title>
+                        </Dialog.Header>
+                        <Dialog.Body m={2}>
+                          <iframe src="../PrivacyPolicy.html" width={"100%"} height={"100%"} />
+                        </Dialog.Body>
+                        <Dialog.Footer>
+                          <Dialog.ActionTrigger asChild>
+                            <Button variant={"outline"}>Close</Button>
+                          </Dialog.ActionTrigger>
+                        </Dialog.Footer>
+                      </Dialog.Content>
+                    </Dialog.Positioner>
+                  </Portal>
+                </Dialog.Root>
+              </HStack>
+
+              {/* Delete Account */}
+              <HStack w="95%">
+                {/* Delete Account Title And Subtitle */}
+                <Stack gap={1} mb={2} w="100%">
+                  <Text fontSize="sm">
+                    Delete Account
+                  </Text>
+                  <Text fontSize="xs">
+                    Permanently deletes your account and its data
+                  </Text>
+                </Stack>
+
+                {/* Delete Account Dialog */}
+                <Dialog.Root size={"sm"} key={"sm"}>
+                  <Dialog.Trigger asChild>
+                    <Button variant={"outline"} backgroundColor={"red.500"}>
+                      Delete
+                    </Button>
+                  </Dialog.Trigger>
+                  <Portal>
+                    <Dialog.Backdrop />
+                    <Dialog.Positioner>
+                      <Dialog.Content>
+                        <Dialog.Header>
+                          <Dialog.Title>
+                            Delete Account Confirmation
+                          </Dialog.Title>
+                        </Dialog.Header>
+                        <Dialog.Body m={2}>
+                          <Stack gap={2}>
+                            <Center>
+                              <Text>Type "Delete" To Confirm</Text>
+                            </Center>
+                            <Center>
+                              <Input type="text" background={"white"} w={"75%"} value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} />
+                            </Center>
+                          </Stack>
+                        </Dialog.Body>
+                        <Dialog.Footer>
+                          <Dialog.ActionTrigger asChild>
+                            <Button variant={"outline"}>Cancel</Button>
+                          </Dialog.ActionTrigger>
+                          <Button variant={"outline"} backgroundColor={"brand.900"} disabled={deleteConfirmText !== "Delete"} onClick={handleAccountDelete}>Confirm</Button>
+                        </Dialog.Footer>
+                      </Dialog.Content>
+                    </Dialog.Positioner>
+                  </Portal>
+                </Dialog.Root>
+              </HStack>
+            </Box>
             </Stack>
           )}
         </Container>

@@ -4,12 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "vite",
+    "dev": "node server.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "start": "node server.js"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.32.0",
@@ -23,10 +23,10 @@
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "mysql2": "^3.22.2",
+    "mysql2": "^3.22.0",
     "next-themes": "^0.4.6",
     "node-fetch": "^3.3.2",
-    "plaid": "^42.1.0",
+    "plaid": "^37.0.0",
     "react": "^19.2.0",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.0",

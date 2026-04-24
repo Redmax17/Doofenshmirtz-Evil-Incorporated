@@ -10,21 +10,15 @@ import jwt from "jsonwebtoken";
 import { requireAuth } from "./authMiddleware.js";
 import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } from "plaid";
 import crypto from "crypto";
-import path from "path";
-import { fileURLToPath } from "url";
-import { dirname } from 'path';
 dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const plaidConfigValue = new Configuration({
   basePath:
     process.env.PLAID_ENV === "production"
       ? PlaidEnvironments.production
       : process.env.PLAID_ENV === "development"
-        ? PlaidEnvironments.development
-        : PlaidEnvironments.sandbox,
+      ? PlaidEnvironments.development
+      : PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
       "PLAID-CLIENT-ID": process.env.PLAID_CLIENT_ID,
@@ -33,27 +27,8 @@ const plaidConfigValue = new Configuration({
   },
 });
 
+
 const app = express();
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://main.d1nrnrw7ygyo95.amplifyapp.com",
-];
-
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error("Not allowed by CORS"));
-  },
-  credentials: true,
-}));
-
-app.options("*", cors({
-  origin: allowedOrigins,
-  credentials: true,
-}));
-
 const portValue = Number(process.env.PORT || 5000);
 const singleRowLimitValue = 1;
 
@@ -71,16 +46,16 @@ const plaidSecretValue = String(process.env.PLAID_SECRET || "").trim();
 const plaidClientValue =
   plaidClientIdValue && plaidSecretValue
     ? new PlaidApi(
-      new Configuration({
-        basePath: plaidBasePathValue,
-        baseOptions: {
-          headers: {
-            "PLAID-CLIENT-ID": plaidClientIdValue,
-            "PLAID-SECRET": plaidSecretValue,
+        new Configuration({
+          basePath: plaidBasePathValue,
+          baseOptions: {
+            headers: {
+              "PLAID-CLIENT-ID": plaidClientIdValue,
+              "PLAID-SECRET": plaidSecretValue,
+            },
           },
-        },
-      }),
-    )
+        }),
+      )
     : null;
 
 function encryptTokenValue(tokenValue) {
@@ -409,15 +384,52 @@ async function syncPlaidTransactionsForItemValue({
 }
 
 app.use(express.json());
-app.use(
-  express.static(path.join(__dirname, 'dist'))
+
+const defaultAllowedOriginsValue = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://main.d1nrnrw7ygyo95.amplifyapp.com",
+];
+
+const envAllowedOriginsValue = String(process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((originValue) => originValue.trim())
+  .filter(Boolean);
+
+const allowedOriginsValue = Array.from(
+  new Set([...defaultAllowedOriginsValue, ...envAllowedOriginsValue]),
 );
+
+const corsOptionsValue = {
+  origin(originValue, callbackValue) {
+    if (!originValue || allowedOriginsValue.includes(originValue)) {
+      return callbackValue(null, true);
+    }
+
+    return callbackValue(new Error(`Origin not allowed by CORS: ${originValue}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+};
+
+app.use(cors(corsOptionsValue));
+app.options(/.*/, cors(corsOptionsValue));
 
 app.get("/api/health", async (req, res) => {
   return res.json({
     ok: true,
     service: "dei-dev-api",
     environment: process.env.NODE_ENV || "development",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get("/", async (req, res) => {
+  return res.json({
+    ok: true,
+    service: "dei-dev-api",
+    message: "Backend is running. Use /api/health for a health check.",
     timestamp: new Date().toISOString(),
   });
 });
@@ -701,7 +713,7 @@ app.post("/api/auth/login", async (req, res) => {
     return res.status(500).json({ error: String(errValue) });
   }
 });
-
+  
 app.get("/api/auth/me", requireAuth, async (req, res) => {
   try {
     const userIdValue = Number(req.user?.userId ?? 0);
@@ -763,7 +775,7 @@ app.post("/api/auth/logout", requireAuth, async (req, res) => {
 app.get("/api/v1/dashboard/summary", requireAuth, async (req, res) => {
   try {
     const { hasAccountFilterValue, accountIdValue, accountFilterSqlValue, debugValue } =
-      resolveAccountFilter(req, "t");
+    resolveAccountFilter(req, "t");
 
     const timeFrameValue = resolveTimeFrameKey(req);
     const whereRangeValue = getTimeFrameWhereClause(timeFrameValue);
@@ -808,7 +820,7 @@ app.get("/api/v1/dashboard/summary", requireAuth, async (req, res) => {
 app.get("/api/v1/dashboard/recent-transactions", requireAuth, async (req, res) => {
   try {
     const { hasAccountFilterValue, accountIdValue, accountFilterSqlValue, debugValue } =
-      resolveAccountFilter(req, "t");
+    resolveAccountFilter(req, "t");
 
     const timeFrameValue = resolveTimeFrameKey(req);
     const whereRangeValue = getTimeFrameWhereClause(timeFrameValue);
@@ -920,7 +932,7 @@ app.get("/api/v1/transactions", requireAuth, async (req, res) => {
 app.get("/api/v1/dashboard/spending-by-category", requireAuth, async (req, res) => {
   try {
     const { hasAccountFilterValue, accountIdValue, accountFilterSqlValue, debugValue } =
-      resolveAccountFilter(req, "t");
+    resolveAccountFilter(req, "t");
 
     const timeFrameValue = resolveTimeFrameKey(req);
     const whereRangeValue = getTimeFrameWhereClause(timeFrameValue);
@@ -957,11 +969,11 @@ app.get("/api/v1/dashboard/spending-by-category", requireAuth, async (req, res) 
   }
 });
 
-/*GET /api/v1/dashboard/spending-trend?timeFrame=...*/
+/*GET /api/v1/dashboard/spending-trend?timeFrame=...*/  
 app.get("/api/v1/dashboard/spending-over-time", requireAuth, async (req, res) => {
   try {
     const { hasAccountFilterValue, accountIdValue, accountFilterSqlValue, debugValue } =
-      resolveAccountFilter(req, "t");
+    resolveAccountFilter(req, "t");
 
     const timeFrameValue = resolveTimeFrameKey(req);
     const whereRangeValue = getTimeFrameWhereClause(timeFrameValue);
@@ -2683,18 +2695,6 @@ app.post("/api/v1/plaid/refresh-balances", requireAuth, async (req, res) => {
   }
 });
 
-app.get('/Login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'Login.html'));
-});
 
-app.get('/Register', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'Register.html'))
-})
-
-app.use((err, req, res, next) => {
-  console.log.error('Error:', error);
-  res.status(404).send("Page Not Found");
-});
-
-// Beanstalk Call
-app.listen(process.env.PORT || 5000, () => console.log(`Server Running On Port, ${process.env.PORT || 5000}`));
+//Localhosting call
+app.listen(portValue, () => console.log(`✅ API on http://localhost:${portValue}`));

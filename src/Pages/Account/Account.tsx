@@ -228,12 +228,12 @@ export default function Account() {
                       <Dialog.Positioner>
                         <Dialog.Content>
                           <Dialog.Header>
-                            <Dialog.Title>
+                            <Dialog.Title color={"accent.400"}>
                               Privacy Policy
                             </Dialog.Title>
                           </Dialog.Header>
                           <Dialog.Body m={2}>
-                            <iframe src="../PrivacyPolicy.html" width={"100%"} height={"100%"} />
+                            <iframe src="/PrivacyPolicy.html" width={"100%"} height={"100%"} />
                           </Dialog.Body>
                           <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>
@@ -270,14 +270,14 @@ export default function Account() {
                       <Dialog.Positioner>
                         <Dialog.Content>
                           <Dialog.Header>
-                            <Dialog.Title>
+                            <Dialog.Title color={"accent.400"}>
                               Delete Account Confirmation
                             </Dialog.Title>
                           </Dialog.Header>
                           <Dialog.Body m={2}>
                             <Stack gap={2}>
                               <Center>
-                                <Text>Type "Delete" To Confirm</Text>
+                                <Text color={"accent.400"}>Type "Delete" To Confirm</Text>
                               </Center>
                               <Center>
                                 <Input type="text" background={"white"} w={"75%"} value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} />
@@ -289,7 +289,7 @@ export default function Account() {
                             <Dialog.ActionTrigger asChild>
                               <Button variant={"outline"}>Cancel</Button>
                             </Dialog.ActionTrigger>
-                            <Button variant={"outline"} backgroundColor={"brand.900"} disabled={deleteConfirmText.toLowerCase() != "delete"} onClick={handleAccountDelete}>Confirm</Button>
+                            <Button variant={"outline"} backgroundColor={"accent.400"} disabled={deleteConfirmText.toLowerCase() != "delete"} onClick={handleAccountDelete}>Confirm</Button>
                           </Dialog.Footer>
                         </Dialog.Content>
                       </Dialog.Positioner>

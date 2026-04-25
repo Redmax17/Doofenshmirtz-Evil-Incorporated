@@ -17,8 +17,8 @@ const plaidConfigValue = new Configuration({
     process.env.PLAID_ENV === "production"
       ? PlaidEnvironments.production
       : process.env.PLAID_ENV === "development"
-      ? PlaidEnvironments.development
-      : PlaidEnvironments.sandbox,
+        ? PlaidEnvironments.development
+        : PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
       "PLAID-CLIENT-ID": process.env.PLAID_CLIENT_ID,
@@ -46,16 +46,16 @@ const plaidSecretValue = String(process.env.PLAID_SECRET || "").trim();
 const plaidClientValue =
   plaidClientIdValue && plaidSecretValue
     ? new PlaidApi(
-        new Configuration({
-          basePath: plaidBasePathValue,
-          baseOptions: {
-            headers: {
-              "PLAID-CLIENT-ID": plaidClientIdValue,
-              "PLAID-SECRET": plaidSecretValue,
-            },
+      new Configuration({
+        basePath: plaidBasePathValue,
+        baseOptions: {
+          headers: {
+            "PLAID-CLIENT-ID": plaidClientIdValue,
+            "PLAID-SECRET": plaidSecretValue,
           },
-        }),
-      )
+        },
+      }),
+    )
     : null;
 
 function encryptTokenValue(tokenValue) {
@@ -713,7 +713,7 @@ app.post("/api/auth/login", async (req, res) => {
     return res.status(500).json({ error: String(errValue) });
   }
 });
-  
+
 app.get("/api/auth/me", requireAuth, async (req, res) => {
   try {
     const userIdValue = Number(req.user?.userId ?? 0);
@@ -775,7 +775,7 @@ app.post("/api/auth/logout", requireAuth, async (req, res) => {
 app.get("/api/v1/dashboard/summary", requireAuth, async (req, res) => {
   try {
     const { hasAccountFilterValue, accountIdValue, accountFilterSqlValue, debugValue } =
-    resolveAccountFilter(req, "t");
+      resolveAccountFilter(req, "t");
 
     const timeFrameValue = resolveTimeFrameKey(req);
     const whereRangeValue = getTimeFrameWhereClause(timeFrameValue);
@@ -820,7 +820,7 @@ app.get("/api/v1/dashboard/summary", requireAuth, async (req, res) => {
 app.get("/api/v1/dashboard/recent-transactions", requireAuth, async (req, res) => {
   try {
     const { hasAccountFilterValue, accountIdValue, accountFilterSqlValue, debugValue } =
-    resolveAccountFilter(req, "t");
+      resolveAccountFilter(req, "t");
 
     const timeFrameValue = resolveTimeFrameKey(req);
     const whereRangeValue = getTimeFrameWhereClause(timeFrameValue);
@@ -932,7 +932,7 @@ app.get("/api/v1/transactions", requireAuth, async (req, res) => {
 app.get("/api/v1/dashboard/spending-by-category", requireAuth, async (req, res) => {
   try {
     const { hasAccountFilterValue, accountIdValue, accountFilterSqlValue, debugValue } =
-    resolveAccountFilter(req, "t");
+      resolveAccountFilter(req, "t");
 
     const timeFrameValue = resolveTimeFrameKey(req);
     const whereRangeValue = getTimeFrameWhereClause(timeFrameValue);
@@ -969,11 +969,11 @@ app.get("/api/v1/dashboard/spending-by-category", requireAuth, async (req, res) 
   }
 });
 
-/*GET /api/v1/dashboard/spending-trend?timeFrame=...*/  
+/*GET /api/v1/dashboard/spending-trend?timeFrame=...*/
 app.get("/api/v1/dashboard/spending-over-time", requireAuth, async (req, res) => {
   try {
     const { hasAccountFilterValue, accountIdValue, accountFilterSqlValue, debugValue } =
-    resolveAccountFilter(req, "t");
+      resolveAccountFilter(req, "t");
 
     const timeFrameValue = resolveTimeFrameKey(req);
     const whereRangeValue = getTimeFrameWhereClause(timeFrameValue);
@@ -2695,6 +2695,130 @@ app.post("/api/v1/plaid/refresh-balances", requireAuth, async (req, res) => {
   }
 });
 
+app.delete("/api/auth/account", authenticateToken, async (req, res) => {
+  try {
+    const userId = Number(req.user.userId);
+
+    const plaidItemsValue = await runQuery(
+      `
+      SELECT id, plaid_item_id, access_token_cipher
+      FROM plaid_items
+      WHERE user_id = ?
+      `,
+      [userIdValue]
+    );
+
+    for (const itemValue of plaidItemsValue) {
+      try {
+        const accessTokenValue = decryptTokenValue(itemValue.access_token_cipher);
+
+        if (accessTokenValue && plaidClientValue) {
+          await plaidClientValue.itemRemove({ access_token: accessTokenValue });
+        }
+      } catch (error) {
+        console.error(`Account Deletion Could Not Remove Plaid Item: ${error.message}`);
+      }
+    }
+
+    await runQuery(
+      `
+      DELETE pfc
+      FROM plaid_transaction_pfc pfc
+      INNER JOIN plaid_transactions t ON t.id = pfc.transaction_id
+      WHERE t.user_id = ?
+      `,
+      [userIdValue]
+    );
+
+    const transactionDeleteResult = await runQuery(
+      `
+      DELETE FROM plaid_transactions
+      WHERE user_id = ?
+      `,
+      [userIdValue]
+    );
+
+    const accountDeleteResult = await runQuery(
+      `
+      DELETE FROM plaid_accounts
+      WHERE user_id = ?
+      `,
+      [userIdValue]
+    );
+
+    const itemDeleteResult = await runQuery(
+      `
+      DELETE FROM plaid_items
+      WHERE user_id = ?
+      `,
+      [userIdValue]
+    );
+
+    await runQuery(
+      `
+      DELETE FROM plaid_link_sessions
+      WHERE user_id = ?
+      `,
+      [userIdValue]
+    );
+
+    await runQuery(
+      `
+      DELETE bi
+      FROM budget_items bi
+      INNER JOIN budgets b ON b.budget_id = bi.budget_id
+      WHERE b.user_id = ?
+      `,
+      [userIdValue]
+    );
+
+    await runQuery(
+      `
+      DELETE FROM budgets
+      WHERE user_id = ?
+      `,
+      [userIdValue]
+    );
+
+    try {
+      await runQuery(
+        `
+        DELETE FROM budget_categories
+        WHERE user_id = ?
+        `,
+        [userIdValue]
+      );
+    } catch (categoryErrorValue) {
+      console.log(`[ACCOUNT_DELETION] Budget categories may not have user_id column or already deleted`);
+    }
+
+    const userDeleteResult = await runQuery(
+      `
+      DELETE FROM users
+      WHERE user_id = ?
+      `,
+      [userIdValue]
+    );
+
+    console.log(`[ACCOUNT_DELETION] SUCCESS - User ${userIdValue} deleted. Stats:`, {
+      transactionsDeleted: transactionDeleteResult?.affectedRows || 0,
+      accountsDeleted: accountDeleteResult?.affectedRows || 0,
+      itemsDeleted: itemDeleteResult?.affectedRows || 0,
+      userDeleted: userDeleteResult?.affectedRows || 0
+    });
+
+    return res.status(200).json({
+      ok: true,
+      message: "Account and all associated data permanently deleted"
+    });
+  } catch (error) {
+    console.error(`[ACCOUNT_DELETION] ERROR for user ${req.user?.userId}:`, errValue);
+    return res.status(500).json({
+      error: "Failed to delete account. Please contact support.",
+      details: process.env.NODE_ENV === "development" ? String(errValue) : undefined
+    });
+  }
+})
 
 //Localhosting call
 app.listen(portValue, () => console.log(`✅ API on http://localhost:${portValue}`));

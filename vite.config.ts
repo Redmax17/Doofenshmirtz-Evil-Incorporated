@@ -15,8 +15,7 @@ export default defineConfig({
         accounts: resolve(__dirname, "Account.html"),
         transactions: resolve(__dirname, "Transactions.html"),
         login: resolve(__dirname, "Login.html"),
-        register: resolve(__dirname, "Register.html"),
-        privacy: resolve(__dirname, 'PrivacyPolicy.html')
+        register: resolve(__dirname, "Register.html")
       },
     },
   },

@@ -208,10 +208,10 @@ export default function Account() {
                 <HStack w="95%">
                   {/* Privacy Policy Title And Subtitle */}
                   <Stack gap={1} mb={2} w="100%">
-                    <Text fontSize="sm">
+                    <Text fontSize="sm" color="black">
                       View Privacy Policy
                     </Text>
-                    <Text fontSize="xs">
+                    <Text fontSize="xs" color="black">
                       View The Privacy Policy Of This App
                     </Text>
                   </Stack>
@@ -219,7 +219,7 @@ export default function Account() {
                   {/* View Privacy Policy Dialog */}
                   <Dialog.Root size={"cover"} key={"xl"}>
                     <Dialog.Trigger asChild>
-                      <Button variant={"outline"} backgroundColor={"brand.900"}>
+                      <Button variant={"outline"} backgroundColor={"accent.400"}>
                         View
                       </Button>
                     </Dialog.Trigger>

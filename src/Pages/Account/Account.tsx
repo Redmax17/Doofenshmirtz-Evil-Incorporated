@@ -250,7 +250,7 @@ export default function Account() {
                           </Dialog.Header>
                           <Dialog.Body m={2}>
                             <Dialog.Body m={2} style={{ maxHeight: "70vh", overflowY: "auto" }}>
-                              <div dangerouslySetInnerHTML={{ __html: content }} />
+                              <div dangerouslySetInnerHTML={{ __html: privacyContent }} />
                             </Dialog.Body>
                           </Dialog.Body>
                           <Dialog.Footer>

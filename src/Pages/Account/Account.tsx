@@ -411,12 +411,7 @@ export default function Account() {
                                 <Text color="red.500" fontSize="sm">{errorTextValue}</Text>
                               )}
                             </Stack>
-                            {emailSuccessText && (
-                              <Text color="green.500" fontSize="sm">{emailSuccessText}</Text>
-                            )}
-                            {errorTextValue && (
-                              <Text color="red.500" fontSize="sm">{errorTextValue}</Text>
-                            )}
+
                           </Dialog.Body>
                           <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>

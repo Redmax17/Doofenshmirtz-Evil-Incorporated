@@ -23,6 +23,10 @@ export default function Account() {
   const [userEmail, setUserEmail] = useState("");
   const [userEmailInput, setUserEmailInput] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteErrorText, setDeleteErrorText] = useState("");
@@ -173,6 +177,10 @@ export default function Account() {
     } finally {
       setIsLoadingValue(false);
     }
+  }
+
+  async function handlePasswordChange(): Promise<void> {
+
   }
 
   useEffect(() => {
@@ -375,13 +383,6 @@ export default function Account() {
                           <Dialog.Body m={2}>
                             <Stack gap={3}>
                               <Stack>
-                                <Text color={"black"} fontWeight="bold">Current Email</Text>
-                                <Text color={"black"} fontSize="sm" backgroundColor="gray.100" p={2} borderRadius="md">
-                                  {userEmail}
-                                </Text>
-                              </Stack>
-
-                              <Stack>
                                 <Text color={"black"}>Confirm Current Email</Text>
                                 <Input
                                   color={"black"}
@@ -429,6 +430,76 @@ export default function Account() {
                             >
                               Save
                             </Button>
+                          </Dialog.Footer>
+                        </Dialog.Content>
+                      </Dialog.Positioner>
+                    </Portal>
+                  </Dialog.Root>
+                </HStack>
+
+                {/* Change Password */}
+                <HStack w="95%">
+                  {/* Change Password Title And Subtitle */}
+                  <Stack gap={1} mb={2} w="100%">
+                    <Text fontSize="sm" color="black">
+                      Change Password
+                    </Text>
+                    <Text fontSize="xs" color="black">
+                      Change the password used to log into your account
+                    </Text>
+                  </Stack>
+
+                  {/* Update Password Dailog */}
+                  <Dialog.Root size={"sm"} key={"sm"}>
+                    <Dialog.Trigger asChild>
+                      <Button variant={"outline"} backgroundColor="accent.400">
+                        Change
+                      </Button>
+                    </Dialog.Trigger>
+                    <Portal>
+                      <Dialog.Backdrop />
+                      <Dialog.Positioner>
+                        <Dialog.Content>
+                          <Dialog.Header>
+                            <Dialog.Title color="black">
+                              Change Password
+                            </Dialog.Title>
+                          </Dialog.Header>
+                          <Dialog.Body m={2}>
+                            <Stack>
+                              <Text color="black">Enter Old Password</Text>
+                              <Input
+                                type="text"
+                                color="black"
+                                backgroundColor={"white"}
+                                w={"75%"}
+                                value={currentPassword}
+                                onChange={e => setCurrentPassword(e.target.value)}
+                              />
+                              <Text color="black">Enter Your New Password</Text>
+                              <Input color="black" type="text" backgroundColor={"white"} w={"75%"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                              <Text color="black">Confirm The New Password</Text>
+                              <Input
+                                type="text"
+                                color="black"
+                                backgroundColor={"white"}
+                                w={"75%"}
+                                value={newPassword}
+                                onChange={e => setNewPassword(e.target.value)}
+                                disabled={confirmPassword !== currentPassword}
+                              />
+
+                              {/*Error Message */}
+                              {passwordError && (
+                                <Text fontSize={"sm"} color={"red"}>{passwordError}</Text>
+                              )}
+                            </Stack>
+                          </Dialog.Body>
+                          <Dialog.Footer>
+                            <Dialog.ActionTrigger asChild>
+                              <Button variant={"outline"}>Cancel</Button>
+                            </Dialog.ActionTrigger>
+                            <Button variant={"outline"} backgroundColor="accent.400" onClick={handlePasswordChange}>Save</Button>
                           </Dialog.Footer>
                         </Dialog.Content>
                       </Dialog.Positioner>
@@ -491,6 +562,6 @@ export default function Account() {
           )}
         </Container>
       </Box>
-    </Layout>
+    </Layout >
   );
 }

@@ -180,7 +180,66 @@ export default function Account() {
   }
 
   async function handlePasswordChange(): Promise<void> {
+    setPasswordError("");
 
+    // Validation
+    if (!currentPassword) {
+      setPasswordError("Current password is required");
+      return;
+    }
+
+    if (!newPassword) {
+      setPasswordError("New password is required");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters long");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords do not match");
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordError("New password must be different from current password");
+      return;
+    }
+
+    setIsLoadingValue(true);
+
+    try {
+      await apiClient.put("/api/auth/password", {
+        currentPassword: currentPassword,
+        newPassword: newPassword
+      });
+
+      // Clear form
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+
+      // Show success (you can add a toast or alert)
+      alert("Password changed successfully!");
+
+      // Close dialog (if you have control over dialog state)
+      // You may want to add a state like `isPasswordDialogOpen` to control this
+
+    } catch (errValue) {
+      const errorMessage = errValue instanceof Error ? errValue.message : "";
+
+      if (errorMessage.includes("Current password is incorrect")) {
+        setPasswordError("Current password is incorrect");
+      } else if (errorMessage.includes("at least 6 characters")) {
+        setPasswordError("New password must be at least 6 characters long");
+      } else {
+        setPasswordError(errorMessage || "Failed to change password");
+      }
+    } finally {
+      setIsLoadingValue(false);
+    }
   }
 
   useEffect(() => {
@@ -469,7 +528,7 @@ export default function Account() {
                             <Stack>
                               <Text color="black">Enter Old Password</Text>
                               <Input
-                                type="text"
+                                type="password"
                                 color="black"
                                 backgroundColor={"white"}
                                 w={"75%"}
@@ -480,7 +539,7 @@ export default function Account() {
                               <Input color="black" type="text" backgroundColor={"white"} w={"75%"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
                               <Text color="black">Confirm The New Password</Text>
                               <Input
-                                type="text"
+                                type="password"
                                 color="black"
                                 backgroundColor={"white"}
                                 w={"75%"}

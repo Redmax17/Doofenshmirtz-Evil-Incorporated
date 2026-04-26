@@ -2695,6 +2695,77 @@ app.post("/api/v1/plaid/refresh-balances", requireAuth, async (req, res) => {
   }
 });
 
+/**
+ * PUT /api/auth/password
+ * Changes the authenticated user's password
+ */
+app.put("/api/auth/password", requireAuth, async (req, res) => {
+  try {
+    const userIdValue = Number(req.user.userId);
+    const currentPasswordValue = String(req.body?.currentPassword || "");
+    const newPasswordValue = String(req.body?.newPassword || "");
+
+    // Validation
+    if (!currentPasswordValue || !newPasswordValue) {
+      return res.status(400).json({ error: "Current password and new password are required" });
+    }
+
+    // Validate new password strength (at least 6 characters)
+    if (newPasswordValue.length < 6) {
+      return res.status(400).json({ error: "New password must be at least 6 characters long" });
+    }
+
+    // Get user with password hash
+    const userRowsValue = await runQuery(
+      `
+      SELECT user_id, password_hash
+      FROM users
+      WHERE user_id = ?
+      LIMIT 1
+      `,
+      [userIdValue]
+    );
+
+    if (!userRowsValue.length) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Verify current password
+    const isValidPasswordValue = await bcrypt.compare(
+      currentPasswordValue,
+      String(userRowsValue[0].password_hash)
+    );
+
+    if (!isValidPasswordValue) {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+
+    // Hash new password
+    const newPasswordHashValue = await bcrypt.hash(newPasswordValue, 12);
+
+    // Update password
+    await runQuery(
+      `
+      UPDATE users
+      SET password_hash = ?, updated_at = NOW()
+      WHERE user_id = ?
+      `,
+      [newPasswordHashValue, userIdValue]
+    );
+
+    console.log(`[PASSWORD_CHANGE] User ${userIdValue} changed password`);
+
+    return res.status(200).json({
+      ok: true,
+      message: "Password changed successfully"
+    });
+
+  } catch (errValue) {
+    console.error(`[PASSWORD_CHANGE] ERROR:`, errValue);
+    return res.status(500).json({ error: "Failed to change password. Please try again later." });
+  }
+});
+
 app.delete("/api/auth/account", authenticateToken, async (req, res) => {
   try {
     const userId = Number(req.user.userId);

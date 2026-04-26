@@ -20,6 +20,10 @@ export default function Account() {
   const [errorTextValue, setErrorTextValue] = useState<string>("");
   const [isDisconnectingItemIdValue, setIsDisconnectingItemIdValue] = useState<string>("");
   const [privacyContent, setPrivacyContent] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [userEmailInput, setUserEmailInput] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteErrorText, setDeleteErrorText] = useState("");
 
@@ -93,6 +97,10 @@ export default function Account() {
     } finally {
       setIsDisconnectingItemIdValue("");
     }
+  }
+
+  async function handleEmailChange(): Promise<void> {
+
   }
 
   useEffect(() => {
@@ -244,7 +252,7 @@ export default function Account() {
                       <Dialog.Positioner>
                         <Dialog.Content>
                           <Dialog.Header>
-                            <Dialog.Title color={"accent.400"}>
+                            <Dialog.Title color="black">
                               Privacy Policy
                             </Dialog.Title>
                           </Dialog.Header>
@@ -257,6 +265,62 @@ export default function Account() {
                             <Dialog.ActionTrigger asChild>
                               <Button variant={"outline"}>Close</Button>
                             </Dialog.ActionTrigger>
+                          </Dialog.Footer>
+                        </Dialog.Content>
+                      </Dialog.Positioner>
+                    </Portal>
+                  </Dialog.Root>
+                </HStack>
+
+                {/* Update Email */}
+                <HStack w="95%">
+                  {/* Update Email Title And Subtitle */}
+                  <Stack gap={1} mb={2} w="100%">
+                    <Text fontSize="sm" color="black">
+                      Update Email
+                    </Text>
+                    <Text fontSize="xs" color="black">
+                      Update your accounts email address
+                    </Text>
+                  </Stack>
+
+                  {/* Update Email Dailog */}
+                  <Dialog.Root size={"sm"} key={"sm"}>
+                    <Dialog.Trigger asChild>
+                      <Button variant={"outline"} backgroundColor={"accent.400"}>
+                        Update
+                      </Button>
+                    </Dialog.Trigger>
+                    <Portal>
+                      <Dialog.Backdrop />
+                      <Dialog.Positioner>
+                        <Dialog.Content>
+                          <Dialog.Header>
+                            <Dialog.Title color={"black"}>
+                              Update Email
+                            </Dialog.Title>
+                          </Dialog.Header>
+                          <Dialog.Body m={2}>
+                            <Stack>
+                              <Text color={"black"}>Enter Your Old Email</Text>
+                              <Input color={"black"} type="text" backgroundColor={"white"} w={"75%"} value={userEmailInput} onChange={e => setUserEmailInput(e.target.value)} />
+                              <Text color={"black"}>Enter The New Email</Text>
+                              <Input
+                                type="text"
+                                color={"black"}
+                                backgroundColor={"white"}
+                                w={"75%"}
+                                value={newEmail}
+                                onChange={e => setNewEmail(e.target.value)}
+                                disabled={userEmailInput !== userEmail}
+                              />
+                            </Stack>
+                          </Dialog.Body>
+                          <Dialog.Footer>
+                            <Dialog.ActionTrigger asChild>
+                              <Button variant={"outline"}>Cancel</Button>
+                            </Dialog.ActionTrigger>
+                            <Button variant={"outline"} backgroundColor={"accent.400"} onClick={handleEmailChange}>Save</Button>
                           </Dialog.Footer>
                         </Dialog.Content>
                       </Dialog.Positioner>

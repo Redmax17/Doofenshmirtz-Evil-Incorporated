@@ -8,7 +8,7 @@ import PageHeader from "../../Shared/PageHeader";
 import PlaidLinkButton from "../../Shared/PlaidLinkButton";
 import StatCard from "../../Shared/StatCard";
 import { apiClient } from "../../Shared/apiClient";
-import { clearStoredAuthTokenValue, hasStoredAuthTokenValue, loadCurrentUserValue, logoutValue, navigateToValue } from "../../Shared/authStorage";
+import { clearStoredAuthTokenValue, hasStoredAuthTokenValue, loadCurrentUserValue, logoutValue, navigateToValue, setStoredAuthTokenValue } from "../../Shared/authStorage";
 import { safeText } from "../../Shared/SharedFunctions";
 import type { AuthUser, PlaidItemsResponse, PlaidInstitutionItem, NetWorthResponse, NetWorthAccountRow } from "../../Shared/types";
 
@@ -99,8 +99,80 @@ export default function Account() {
     }
   }
 
-  async function handleEmailChange(): Promise<void> {
+  useEffect(() => {
+    if (userValue?.email) {
+      setUserEmail(userValue.email);
+      setUserEmailInput(userValue.email);
+    }
+  }, [userValue]);
 
+  async function handleEmailChange(): Promise<void> {
+    setErrorTextValue("");
+    setDeleteErrorText(""); // Use existing error state or create one for email
+
+    // Validation
+    if (!userEmailInput || !newEmail) {
+      setErrorTextValue("Both current and new email are required.");
+      return;
+    }
+
+    // Check if old email matches
+    if (userEmailInput !== userEmail) {
+      setErrorTextValue("Current email does not match our records.");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      setErrorTextValue("Please enter a valid email address.");
+      return;
+    }
+
+    // Check if new email is different from current
+    if (newEmail === userEmail) {
+      setErrorTextValue("New email is the same as your current email.");
+      return;
+    }
+
+    setIsLoadingValue(true);
+
+    try {
+      const response = await apiClient.put<{ token: string; user: { userId: number; email: string } }>(
+        "/api/auth/email",
+        { newEmail: newEmail }
+      );
+
+      // Update the stored token with the new one
+      setStoredAuthTokenValue(response.token);
+
+      // Update the user email state
+      setUserEmail(response.user.email);
+      setUserEmailInput(response.user.email);
+      setUserValue(prev => prev ? { ...prev, email: response.user.email } : prev);
+
+      // Clear the input
+      setNewEmail("");
+
+      // Show success (you can add a toast or temporary success message)
+      setErrorTextValue(""); // Clear any errors
+      alert("Email updated successfully!"); // Or use a better notification system
+
+    } catch (errValue) {
+      const errorMessage = errValue instanceof Error ? errValue.message : "";
+
+      if (errorMessage.includes("already in use")) {
+        setErrorTextValue("This email is already registered to another account.");
+      } else if (errorMessage.includes("Invalid email")) {
+        setErrorTextValue("Please enter a valid email address.");
+      } else if (errorMessage.includes("same as current")) {
+        setErrorTextValue("New email is the same as your current email.");
+      } else {
+        setErrorTextValue(errorMessage || "Failed to change email.");
+      }
+    } finally {
+      setIsLoadingValue(false);
+    }
   }
 
   useEffect(() => {
@@ -284,7 +356,7 @@ export default function Account() {
                     </Text>
                   </Stack>
 
-                  {/* Update Email Dailog */}
+                  {/* Update Email Dialog */}
                   <Dialog.Root size={"sm"} key={"sm"}>
                     <Dialog.Trigger asChild>
                       <Button variant={"outline"} backgroundColor={"accent.400"}>
@@ -301,26 +373,67 @@ export default function Account() {
                             </Dialog.Title>
                           </Dialog.Header>
                           <Dialog.Body m={2}>
-                            <Stack>
-                              <Text color={"black"}>Enter Your Old Email</Text>
-                              <Input color={"black"} type="text" backgroundColor={"white"} w={"75%"} value={userEmailInput} onChange={e => setUserEmailInput(e.target.value)} />
-                              <Text color={"black"}>Enter The New Email</Text>
-                              <Input
-                                type="text"
-                                color={"black"}
-                                backgroundColor={"white"}
-                                w={"75%"}
-                                value={newEmail}
-                                onChange={e => setNewEmail(e.target.value)}
-                                disabled={userEmailInput !== userEmail}
-                              />
+                            <Stack gap={3}>
+                              <Stack>
+                                <Text color={"black"} fontWeight="bold">Current Email</Text>
+                                <Text color={"black"} fontSize="sm" backgroundColor="gray.100" p={2} borderRadius="md">
+                                  {userEmail}
+                                </Text>
+                              </Stack>
+
+                              <Stack>
+                                <Text color={"black"}>Confirm Current Email</Text>
+                                <Input
+                                  color={"black"}
+                                  type="email"
+                                  backgroundColor={"white"}
+                                  w={"100%"}
+                                  placeholder="Enter your current email"
+                                  value={userEmailInput}
+                                  onChange={e => setUserEmailInput(e.target.value)}
+                                />
+                              </Stack>
+
+                              <Stack>
+                                <Text color={"black"}>New Email Address</Text>
+                                <Input
+                                  type="email"
+                                  color={"black"}
+                                  backgroundColor={"white"}
+                                  w={"100%"}
+                                  placeholder="Enter new email address"
+                                  value={newEmail}
+                                  onChange={e => setNewEmail(e.target.value)}
+                                />
+                              </Stack>
+
+                              {errorTextValue && (
+                                <Text color="red.500" fontSize="sm">{errorTextValue}</Text>
+                              )}
                             </Stack>
+                            {emailSuccessText && (
+                              <Text color="green.500" fontSize="sm">{emailSuccessText}</Text>
+                            )}
+                            {errorTextValue && (
+                              <Text color="red.500" fontSize="sm">{errorTextValue}</Text>
+                            )}
                           </Dialog.Body>
                           <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>
-                              <Button variant={"outline"}>Cancel</Button>
+                              <Button variant={"outline"} onClick={() => {
+                                setUserEmailInput(userEmail);
+                                setNewEmail("");
+                                setErrorTextValue("");
+                              }}>Cancel</Button>
                             </Dialog.ActionTrigger>
-                            <Button variant={"outline"} backgroundColor={"accent.400"} onClick={handleEmailChange}>Save</Button>
+                            <Button
+                              variant={"outline"}
+                              backgroundColor={"accent.400"}
+                              onClick={handleEmailChange}
+                              disabled={!userEmailInput || !newEmail || userEmailInput !== userEmail}
+                            >
+                              Save
+                            </Button>
                           </Dialog.Footer>
                         </Dialog.Content>
                       </Dialog.Positioner>

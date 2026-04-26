@@ -233,8 +233,14 @@ export default function Account() {
                             </Dialog.Title>
                           </Dialog.Header>
                           <Dialog.Body m={2}>
-                            <a href="./PrivacyPolicy.html">dev view</a>
-                            <iframe src="./PrivacyPolicy.html" width={"100%"} height={"100%"} />
+                            <object
+                              data="./PrivacyPolicy.html"
+                              width="100%"
+                              height="100%"
+                              type="text/html"
+                            >
+                              <p>Unable to display. <a href="./PrivacyPolicy.html">Click here to view</a></p>
+                            </object>
                           </Dialog.Body>
                           <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>

@@ -19,6 +19,7 @@ export default function Account() {
   const [isLoadingValue, setIsLoadingValue] = useState<boolean>(true);
   const [errorTextValue, setErrorTextValue] = useState<string>("");
   const [isDisconnectingItemIdValue, setIsDisconnectingItemIdValue] = useState<string>("");
+  const [privacyContent, setPrivacyContent] = useState("");
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteErrorText, setDeleteErrorText] = useState("");
 
@@ -93,6 +94,21 @@ export default function Account() {
       setIsDisconnectingItemIdValue("");
     }
   }
+
+  useEffect(() => {
+    fetch("./PrivacyPolicy.html")
+      .then(response => response.text())
+      .then(html => {
+        // Extract just the body content
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        const bodyContent = doc.body.innerHTML;
+        setPrivacyContent(bodyContent);
+      })
+      .catch(err => {
+        console.error("Failed to load:", err);
+      });
+  }, []);
 
   return (
     <Layout activePage="account">
@@ -233,14 +249,9 @@ export default function Account() {
                             </Dialog.Title>
                           </Dialog.Header>
                           <Dialog.Body m={2}>
-                            <object
-                              data="./PrivacyPolicy.html"
-                              width="100%"
-                              height="100%"
-                              type="text/html"
-                            >
-                              <p>Unable to display. <a href="./PrivacyPolicy.html">Click here to view</a></p>
-                            </object>
+                            <Dialog.Body m={2} style={{ maxHeight: "70vh", overflowY: "auto" }}>
+                              <div dangerouslySetInnerHTML={{ __html: content }} />
+                            </Dialog.Body>
                           </Dialog.Body>
                           <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>

@@ -100,7 +100,7 @@ export default function AccountsToggle({
               optValue.accountId === -1 ? "all" : String(optValue.accountId);
 
             return (
-              <option key={valueValue} value={valueValue}>
+              <option key={valueValue} value={valueValue} color={"black"}>
                 {optValue.name}
               </option>
             );

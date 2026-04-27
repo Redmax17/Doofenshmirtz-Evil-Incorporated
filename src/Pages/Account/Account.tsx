@@ -395,11 +395,10 @@ export default function Account() {
                               Privacy Policy
                             </Dialog.Title>
                           </Dialog.Header>
-                          <Dialog.Body m={2}>
-                            <Dialog.Body m={2} style={{ maxHeight: "70vh", overflowY: "auto" }}>
-                              <div dangerouslySetInnerHTML={{ __html: privacyContent }} />
+                            <Dialog.Body style={{ maxHeight: "70vh", overflowY: "auto" }}>
+                              <div dangerouslySetInnerHTML={{ __html: privacyContent }}
+                              style={{margin: "8px"}} />
                             </Dialog.Body>
-                          </Dialog.Body>
                           <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>
                               <Button variant={"outline"}>Close</Button>

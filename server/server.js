@@ -2843,7 +2843,7 @@ app.put("/api/auth/password", requireAuth, async (req, res) => {
   }
 });
 
-app.delete("/api/auth/account", authenticateToken, async (req, res) => {
+app.delete("/api/auth/account", requireAuth, async (req, res) => {
   try {
     const userId = Number(req.user.userId);
 

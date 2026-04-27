@@ -598,7 +598,7 @@ export default function Account() {
                                 <Text color="black">Type "Delete" To Confirm</Text>
                               </Center>
                               <Center>
-                                <Input type="text" background={"white"} w={"75%"} value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} />
+                                <Input type="text" background={"white"} color={"black"} w={"75%"} value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} />
                               </Center>
                               {deleteErrorText ? <Text color="negatives.400" fontWeight={800}>{deleteErrorText}</Text> : null}
                             </Stack>
@@ -607,7 +607,7 @@ export default function Account() {
                             <Dialog.ActionTrigger asChild>
                               <Button variant={"outline"}>Cancel</Button>
                             </Dialog.ActionTrigger>
-                            <Button variant={"outline"} backgroundColor="negatives.400" disabled={deleteConfirmText.toLowerCase() != "delete"} onClick={handleAccountDelete}>Confirm</Button>
+                            <Button variant={"outline"} color={"black"} backgroundColor="negatives.400" disabled={deleteConfirmText.toLowerCase() != "delete"} onClick={handleAccountDelete}>Confirm</Button>
                           </Dialog.Footer>
                         </Dialog.Content>
                       </Dialog.Positioner>

@@ -544,7 +544,6 @@ export default function Account() {
                                 w={"75%"}
                                 value={newPassword}
                                 onChange={e => setNewPassword(e.target.value)}
-                                disabled={confirmPassword !== currentPassword}
                               />
 
                               {/*Error Message */}
@@ -557,7 +556,7 @@ export default function Account() {
                             <Dialog.ActionTrigger asChild>
                               <Button variant={"outline"}>Cancel</Button>
                             </Dialog.ActionTrigger>
-                            <Button variant={"outline"} backgroundColor="accent.400" onClick={handlePasswordChange}>Save</Button>
+                            <Button variant={"outline"} backgroundColor="accent.400" onClick={handlePasswordChange} disabled={confirmPassword !== newPassword}>Save</Button>
                           </Dialog.Footer>
                         </Dialog.Content>
                       </Dialog.Positioner>

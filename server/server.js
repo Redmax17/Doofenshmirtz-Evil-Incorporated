@@ -2696,6 +2696,83 @@ app.post("/api/v1/plaid/refresh-balances", requireAuth, async (req, res) => {
 });
 
 /**
+ * PUT /api/auth/email
+ * Changes the authenticated user's email address
+ */
+app.put("/api/auth/email", requireAuth, async (req, res) => {
+  try {
+    const userIdValue = Number(req.user.userId);
+    const newEmailValue = String(req.body?.newEmail || "").trim().toLowerCase();
+
+    // Validation
+    if (!newEmailValue) {
+      return res.status(400).json({ error: "New email is required" });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
+    if (!emailRegex.test(newEmailValue)) {
+      return res.status(400).json({ error: "Please provide a valid email address" });
+    }
+
+    // Get user with current email
+    const userRowsValue = await runQuery(
+      `
+      SELECT user_id, email
+      FROM users
+      WHERE user_id = ?
+      LIMIT 1
+      `,
+      [userIdValue]
+    );
+
+    if (!userRowsValue.length) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if new email is same as current email
+    if (userRowsValue[0].email === newEmailValue) {
+      return res.status(400).json({ error: "New email must be different from current email" });
+    }
+
+    // Check if new email is already taken by another user
+    const existingUserValue = await runQuery(
+      `
+      SELECT user_id FROM users WHERE email = ? AND user_id != ?
+      LIMIT 1
+      `,
+      [newEmailValue, userIdValue]
+    );
+
+    if (existingUserValue.length > 0) {
+      return res.status(409).json({ error: "Email is already registered to another account" });
+    }
+
+    // Update email
+    await runQuery(
+      `
+      UPDATE users
+      SET email = ?, updated_at = NOW()
+      WHERE user_id = ?
+      `,
+      [newEmailValue, userIdValue]
+    );
+
+    console.log(`[EMAIL_CHANGE] User ${userIdValue} changed email from ${userRowsValue[0].email} to ${newEmailValue}`);
+
+    return res.status(200).json({
+      ok: true,
+      message: "Email changed successfully",
+      email: newEmailValue
+    });
+
+  } catch (errValue) {
+    console.error(`[EMAIL_CHANGE] ERROR:`, errValue);
+    return res.status(500).json({ error: "Failed to change email. Please try again later." });
+  }
+});
+
+/**
  * PUT /api/auth/password
  * Changes the authenticated user's password
  */

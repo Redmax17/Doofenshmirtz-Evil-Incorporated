@@ -90,7 +90,7 @@ export default function AccountsToggle({
           </Text>
         </HStack>
       ) : (
-       <NativeSelectRoot size="sm" maxW="260px">
+       <NativeSelectRoot size="sm" maxW="260px" color={"black"}>
         <NativeSelectField
           value={selectedAccountIdValue}
           onChange={(e) => onChangeAccountIdValue(String(e.target.value))}
